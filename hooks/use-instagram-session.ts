@@ -57,11 +57,11 @@ export function useInstagramSession() {
         handleSession()
     }, [searchParams, router])
 
-    const logout = () => {
+    const logout = async () => {
         localStorage.removeItem("ig_user_id")
         localStorage.removeItem("ig_username")
         localStorage.removeItem("ig_profile_pic")
-        document.cookie = "insta_session=; Max-Age=0; path=/;"
+        await fetch("/api/auth/logout", { method: "POST" }).catch(() => {})
         setUsername(null)
         setUserId(null)
         setProfilePic(null)

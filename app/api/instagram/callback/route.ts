@@ -7,13 +7,13 @@ export async function GET(request: NextRequest) {
   const error = searchParams.get("error")
 
   if (error) {
-    const redirectUrl = new URL("/", request.url)
+    const redirectUrl = new URL("/dashboard", request.url)
     redirectUrl.searchParams.set("error", error)
     return NextResponse.redirect(redirectUrl)
   }
 
   if (code) {
-    const redirectUrl = new URL("/", request.url)
+    const redirectUrl = new URL("/dashboard", request.url)
     redirectUrl.searchParams.set("code", code)
     return NextResponse.redirect(redirectUrl)
   }

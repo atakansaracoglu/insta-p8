@@ -299,6 +299,11 @@ const tr: Dict = {
   "settings.title": "Ayarlar",
   "settings.systemSettings": "Sistem Ayarları",
   "settings.description": "Hesap tercihlerinizi, bildirimlerinizi ve entegrasyon ayarlarınızı buradan yapılandırın.",
+  "settings.account": "Hesap",
+  "settings.registration": "Üyelik Sistemi",
+  "settings.registrationDesc": "Yeni kullanıcıların kayıt olmasına izin ver veya kapat.",
+  "settings.registrationOpen": "Kayıtlar Açık",
+  "settings.registrationClosed": "Kayıtlar Kapalı",
 
   // Common
   "common.loading": "Yükleniyor...",
@@ -569,6 +574,11 @@ const en: Dict = {
   "settings.title": "Settings",
   "settings.systemSettings": "System Settings",
   "settings.description": "Configure your account preferences, notifications, and integration settings here.",
+  "settings.account": "Account",
+  "settings.registration": "Registration",
+  "settings.registrationDesc": "Allow or block new user signups.",
+  "settings.registrationOpen": "Registration Open",
+  "settings.registrationClosed": "Registration Closed",
 
   "common.loading": "Loading...",
   "common.error": "Something went wrong.",

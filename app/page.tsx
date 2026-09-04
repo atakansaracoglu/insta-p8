@@ -1,25 +1,30 @@
 "use client"
 
-import { useEffect } from "react"
-import { useSearchParams, useRouter } from "next/navigation"
-import { LandingPage } from "@/components/layout/landing-page"
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { LoginPage } from "@/components/login-page"
 import { Loader2 } from "lucide-react"
 
 export default function Home() {
   const router = useRouter()
-  const searchParams = useSearchParams()
+  const [checking, setChecking] = useState(true)
 
   useEffect(() => {
-    // Check if we have an active session or a callback code
-    const code = searchParams.get("code")
-    const savedId = localStorage.getItem("ig_user_id")
+    fetch("/api/auth/session")
+      .then((r) => {
+        if (r.ok) router.replace("/dashboard")
+        else setChecking(false)
+      })
+      .catch(() => setChecking(false))
+  }, [router])
 
-    if (code || savedId) {
-      // If code exists, Redirect to dashboard to handle the handshake (via the new hook)
-      // If local session exists, also redirect
-      router.replace("/dashboard?code=" + (code || ""))
-    }
-  }, [searchParams, router])
+  if (checking) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
 
-  return <LandingPage />
+  return <LoginPage />
 }
