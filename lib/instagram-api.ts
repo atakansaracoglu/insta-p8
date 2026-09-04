@@ -27,14 +27,26 @@ export interface SendResult {
 
 async function post(path: string, token: string, body: any): Promise<SendResult> {
   try {
+    const recipientDesc = body?.recipient?.comment_id
+      ? `comment_id=${body.recipient.comment_id}`
+      : body?.recipient?.id
+        ? `id=${body.recipient.id}`
+        : "unknown"
     const res = await fetch(`${GRAPH}/${path}?access_token=${encodeURIComponent(token)}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     })
-    const json = await res.json()
+    const rawText = await res.text()
+    let json: any
+    try {
+      json = JSON.parse(rawText)
+    } catch {
+      console.error(`[ig-api] ${path} [${recipientDesc}] HTTP ${res.status} non-JSON response: ${rawText.slice(0, 500)}`)
+      return { ok: false, error: { status: res.status, body: rawText.slice(0, 500) } }
+    }
     if (json.error) {
-      console.error(`[ig-api] ${path} failed:`, JSON.stringify(json.error))
+      console.error(`[ig-api] ${path} [${recipientDesc}] HTTP ${res.status} error:`, JSON.stringify(json.error))
       return { ok: false, error: json.error }
     }
     return { ok: true, id: json.id || json.message_id }

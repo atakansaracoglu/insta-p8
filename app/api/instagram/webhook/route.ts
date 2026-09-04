@@ -227,6 +227,11 @@ export async function POST(request: NextRequest) {
     }
     const body = JSON.parse(rawBody)
     if (!body.entry) return NextResponse.json({ ok: true })
+
+    const hasChanges = body.entry.some((e: any) => e.changes?.length)
+    const hasMessaging = body.entry.some((e: any) => e.messaging?.length)
+    console.log(`[webhook] WEBHOOK_RECEIVED: entries=${body.entry.length} hasChanges=${hasChanges} hasMessaging=${hasMessaging}`)
+
     // Ensure schema is up-to-date on every cold start (idempotent, no-op if all tables exist)
     ensureSchema().catch((e) => console.warn("[webhook] ensureSchema failed:", e?.message))
     const supabase = await getSupabaseServerClient()
@@ -291,9 +296,11 @@ export async function POST(request: NextRequest) {
       }
 
       if (!user) {
-        console.log(`[webhook] ❌ Could not resolve user for ID ${webhookId}`)
+        console.log(`[webhook] USER_RESOLVED: FAILED for webhookId=${webhookId}`)
         continue
       }
+
+      console.log(`[webhook] USER_RESOLVED: OK user=${user.id} username=@${user.username} webhookId=${webhookId}`)
 
       const { data: automations } = await supabase
         .from("automations")
@@ -301,7 +308,14 @@ export async function POST(request: NextRequest) {
         .eq("user_id", user.id)
         .eq("is_active", true)
 
-      if (!automations?.length) continue
+      if (!automations?.length) {
+        console.log(`[webhook] NO_AUTOMATIONS: user ${user.id} has no active automations`)
+        continue
+      }
+      const commentRuleCount = automations.filter((a: any) => a.trigger_source === "comment").length
+      const dmRuleCount = automations.filter((a: any) => a.trigger_source === "dm" || !a.trigger_source).length
+      const storyRuleCount = automations.filter((a: any) => a.trigger_source === "story").length
+      console.log(`[webhook] AUTOMATIONS_LOADED: ${automations.length} active (comment=${commentRuleCount} dm=${dmRuleCount} story=${storyRuleCount})`)
 
       // ============================================================
       //  PART A: COMMENTS
@@ -312,11 +326,35 @@ export async function POST(request: NextRequest) {
 
           const commentId = change.value.id
           const commentText = change.value.text.toLowerCase().trim()
+          const senderUsername = change.value.from?.username || "unknown"
+
+          // Guard: some webhook payloads omit `from` for restricted accounts
+          if (!change.value.from?.id) {
+            console.warn(`[webhook] COMMENT_RECEIVED: comment ${commentId} has no from.id (restricted account?) — skipping`)
+            continue
+          }
+
           const senderId = change.value.from.id
-          const mediaId = change.value.media.id
+          const mediaId = change.value.media?.id
           const parentId = change.value.parent_id || null
 
-          if (senderId === webhookId || senderId === user.business_account_id || senderId === user.page_id) continue
+          // Check if this commenter already has a conversation (existing vs new user)
+          let isNewUser = true
+          try {
+            const { data: existingConv } = await supabase
+              .from("conversations")
+              .select("id")
+              .eq("user_id", user.id)
+              .eq("recipient_id", String(senderId))
+              .single()
+            isNewUser = !existingConv
+          } catch { /* no conversation = new user */ }
+          console.log(`[webhook] COMMENT_RECEIVED: commentId=${commentId} senderId=${senderId} username=@${senderUsername} mediaId=${mediaId} isNewUser=${isNewUser} text="${commentText.slice(0, 80)}"`)
+
+          if (senderId === webhookId || senderId === user.business_account_id || senderId === user.page_id) {
+            console.log(`[webhook] COMMENT_SKIPPED: sender is page owner`)
+            continue
+          }
 
           const commentAutomations = automations.filter((a: any) => a.trigger_source === "comment")
 
@@ -340,15 +378,30 @@ export async function POST(request: NextRequest) {
                 keywordMatches(a.trigger_value, commentText),
             )
           }
-          if (!match) continue
+          if (!match) {
+            console.log(`[webhook] COMMENT_NO_MATCH: no automation matched for comment "${commentText.slice(0, 40)}" on media ${mediaId} (${commentAutomations.length} comment rules checked)`)
+            continue
+          }
 
                     const content = parseContent(match.response_content)
 
                     // Skip nested replies unless user opted in
-                    if (parentId && content.include_replies !== true) continue
+                    if (parentId && content.include_replies !== true) {
+                      console.log(`[webhook] COMMENT_SKIPPED: nested reply (parentId=${parentId}), include_replies not enabled`)
+                      continue
+                    }
 
-                    console.log(`[webhook] ✅ Comment match: "${match.name}"`)
+                    console.log(`[webhook] COMMENT_MATCH: rule="${match.name}" id=${match.id} isNewUser=${isNewUser} check_follow=${!!content.check_follow}`)
                     await bumpTriggerCount(supabase, match.id)
+
+                    // Log webhook event for debugging
+                    try {
+                      await supabase.from("webhook_events").insert({
+                        event_type: "comment_automation",
+                        user_id: user.id,
+                        data: { commentId, senderId, senderUsername, mediaId, isNewUser, ruleName: match.name, ruleId: match.id, checkFollow: !!content.check_follow },
+                      })
+                    } catch { /* best-effort */ }
 
                     // reply_mode: 'both' (default) | 'dm_only' | 'public_only'
                     const replyMode = content.reply_mode || "both"
@@ -368,13 +421,14 @@ export async function POST(request: NextRequest) {
                     // follow check in DM handler (OPT_IN_ postback) → content or gate.
                     // We never check follow on the comment itself — that happens when they tap.
                     if (content.check_follow === true) {
-                      console.log(`[webhook] 📩 Comment follow-gate: sending opt-in card for rule ${match.id}`)
+                      console.log(`[webhook] COMMENT_FOLLOW_GATE: sending opt-in card for rule ${match.id} to @${senderUsername} (isNewUser=${isNewUser})`)
                       if (replyMode !== "dm_only") {
-                        await replyToComment(user.access_token, commentId, getPublicReply())
+                        const publicResult = await replyToComment(user.access_token, commentId, getPublicReply())
+                        console.log(`[webhook] COMMENT_PUBLIC_REPLY: ok=${publicResult.ok}${publicResult.error ? ` error=${JSON.stringify(publicResult.error)}` : ""}`)
                       }
                       if (replyMode !== "public_only") {
                         const optInDefaults = DEFAULT_OPT_IN[ruleLang] || DEFAULT_OPT_IN.tr
-                        await sendCardDM(
+                        const cardResult = await sendCardDM(
                           user.access_token,
                           { comment_id: commentId },
                           buildOptInCard({
@@ -383,19 +437,48 @@ export async function POST(request: NextRequest) {
                             buttonText: content.opt_in_button || optInDefaults.button,
                           }),
                         )
+                        console.log(`[webhook] COMMENT_DM_OPTIN: ok=${cardResult.ok} isNewUser=${isNewUser}${cardResult.error ? ` error=${JSON.stringify(cardResult.error)}` : ""}`)
+
+                        // Fallback: if template-based private reply failed, try text-only
+                        // Instagram Private Reply API may reject templates for users with no
+                        // prior conversation. Text-only private replies have broader support.
+                        if (!cardResult.ok && isNewUser) {
+                          const fallbackText = content.opt_in_message || optInDefaults.message
+                          console.log(`[webhook] COMMENT_DM_OPTIN_FALLBACK: retrying as text-only for new user @${senderUsername}`)
+                          const textResult = await sendTextDM(
+                            user.access_token,
+                            { comment_id: commentId },
+                            fallbackText,
+                          )
+                          console.log(`[webhook] COMMENT_DM_OPTIN_FALLBACK_RESULT: ok=${textResult.ok}${textResult.error ? ` error=${JSON.stringify(textResult.error)}` : ""}`)
+                        }
                       }
                     } else {
                       // No follower check required — send normally
                       if (replyMode !== "dm_only") {
-                        await replyToComment(user.access_token, commentId, getPublicReply())
+                        const publicResult = await replyToComment(user.access_token, commentId, getPublicReply())
+                        console.log(`[webhook] COMMENT_PUBLIC_REPLY: ok=${publicResult.ok}${publicResult.error ? ` error=${JSON.stringify(publicResult.error)}` : ""}`)
                       }
                       if (replyMode !== "public_only") {
-                        await sendAutomationResponse(
+                        const dmResult = await sendAutomationResponse(
                           user.access_token,
                           { comment_id: commentId },
                           content,
                           { skipTyping: true },
                         )
+                        console.log(`[webhook] COMMENT_DM_SEND: ok=${dmResult.ok} isNewUser=${isNewUser}${dmResult.error ? ` error=${JSON.stringify(dmResult.error)}` : ""}`)
+
+                        // Fallback: if the DM (possibly a card/media) failed for a new user,
+                        // retry with plain text — private replies are more reliable as text.
+                        if (!dmResult.ok && isNewUser && content.message) {
+                          console.log(`[webhook] COMMENT_DM_FALLBACK: retrying as text-only for new user @${senderUsername}`)
+                          const textResult = await sendTextDM(
+                            user.access_token,
+                            { comment_id: commentId },
+                            content.message,
+                          )
+                          console.log(`[webhook] COMMENT_DM_FALLBACK_RESULT: ok=${textResult.ok}${textResult.error ? ` error=${JSON.stringify(textResult.error)}` : ""}`)
+                        }
                       }
                     }
         }
