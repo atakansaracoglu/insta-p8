@@ -4,7 +4,7 @@ import type React from "react"
 import { cn } from "@/lib/utils"
 import {
   Zap, LayoutDashboard, LogOut, Settings, BarChart3,
-  MessageSquare, Snowflake, Send,
+  MessageSquare, Snowflake, Send, Users,
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -15,6 +15,7 @@ const NAV = [
   { href: "/dashboard/automations", icon: Zap, label: "Automations" },
   { href: "/dashboard/inbox", icon: MessageSquare, label: "Inbox" },
   { href: "/dashboard/ice-breakers", icon: Snowflake, label: "Ice breakers" },
+  { href: "/dashboard/audience", icon: Users, label: "Audience" },
   { href: "/dashboard/analytics", icon: BarChart3, label: "Analytics" },
 ]
 

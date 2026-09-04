@@ -39,6 +39,22 @@ function isValidSignature(rawBody: string, signatureHeader: string | null): bool
 
 const DEFAULT_PUBLIC_REPLIES = ["Check your DMs! 📥", "Sent! 🔥", "Check inbox! ✨"]
 
+async function bumpTriggerCount(supabase: any, automationId: string) {
+  try {
+    await supabase.rpc("increment_trigger_count", { p_id: automationId })
+  } catch { /* best-effort */ }
+}
+
+function gateCardParams(content: any, username: string, ruleId: string, overrides?: { title?: string; subtitle?: string }) {
+  return {
+    username,
+    ruleId,
+    title: overrides?.title ?? content.follow_gate_title ?? undefined,
+    subtitle: overrides?.subtitle ?? content.follow_gate_subtitle ?? undefined,
+    buttonText: content.follow_gate_button ?? undefined,
+  }
+}
+
 // Max times we'll send the gate card for an unverifiable follow status on a single unlock event.
 // After this, we send a single "couldn't verify your follow" message and stop spamming the user.
 const UNLOCK_GATE_MAX_ATTEMPTS = 3
@@ -320,6 +336,7 @@ export async function POST(request: NextRequest) {
                     if (parentId && content.include_replies !== true) continue
 
                     console.log(`[webhook] ✅ Comment match: "${match.name}"`)
+                    await bumpTriggerCount(supabase, match.id)
 
                     // reply_mode: 'both' (default) | 'dm_only' | 'public_only'
                     const replyMode = content.reply_mode || "both"
@@ -362,7 +379,7 @@ export async function POST(request: NextRequest) {
                           await sendCardDM(
                             user.access_token,
                             { comment_id: commentId },
-                            buildFollowGateCard({ username: user.username, ruleId: match.id }),
+                            buildFollowGateCard(gateCardParams(content, user.username, match.id)),
                           )
                         }
                       } else {
@@ -378,7 +395,7 @@ export async function POST(request: NextRequest) {
                             await sendCardDM(
                               user.access_token,
                               { comment_id: commentId },
-                              buildFollowGateCard({ username: user.username, ruleId: match.id }),
+                              buildFollowGateCard(gateCardParams(content, user.username, match.id)),
                             )
                           }
                         } else {
@@ -467,6 +484,7 @@ export async function POST(request: NextRequest) {
 
           if (match) {
                                           console.log(`[webhook] ✨ Story match: "${match.name}"`)
+                                          await bumpTriggerCount(supabase, match.id)
                                           const content = parseContent(match.response_content)
 
                                           if (content.check_follow === true) {
@@ -477,14 +495,14 @@ export async function POST(request: NextRequest) {
                                               await sendAutomationResponse(user.access_token, { id: senderId }, content)
                                             } else if (followResult.follows === false) {
                                               console.log(`[webhook] 🔒 Story follower gate: @${senderId} doesn't follow @${user.username}`)
-                                              await sendCardDM(user.access_token, { id: senderId }, buildFollowGateCard({ username: user.username, ruleId: match.id }))
+                                              await sendCardDM(user.access_token, { id: senderId }, buildFollowGateCard(gateCardParams(content, user.username, match.id)))
                                             } else {
                                               // null → unverifiable. Distinguish auth vs transient.
                                               const isAuthError = followResult.error === 'auth'
                                               if (isAuthError) {
                                                 // Auth failure — fail CLOSED: send gate
                                                 console.warn(`[webhook] ⚠️ Story follower gate auth failure for @${senderId}; sending gate`)
-                                                await sendCardDM(user.access_token, { id: senderId }, buildFollowGateCard({ username: user.username, ruleId: match.id }))
+                                                await sendCardDM(user.access_token, { id: senderId }, buildFollowGateCard(gateCardParams(content, user.username, match.id)))
                                               } else {
                                                 // Transient failure — fail OPEN: deliver content
                                                 console.warn(`[webhook] ⚠️ Story follower gate transient failure for @${senderId}; failing open`)
@@ -645,6 +663,7 @@ export async function POST(request: NextRequest) {
                     if (!match) continue
 
                     console.log(`[webhook] ✅ DM match: "${match.name}"`)
+                    await bumpTriggerCount(supabase, match.id)
                     const content = parseContent(match.response_content)
 
                     // Mark message as seen for human-like flow
@@ -684,7 +703,7 @@ export async function POST(request: NextRequest) {
                         } else if (followResult.follows === false) {
                           await clearUnlockAttempts(attemptKey)
                           console.log(`[webhook] ❌ DM unlock rejected: @${senderId} still doesn't follow`)
-                          const result = await sendCardDM(user.access_token, { id: senderId }, buildFollowGateCard({ username: user.username, ruleId: match.id, title: "❌ Not Following Yet!", subtitle: `We couldn't verify your follow. Please follow @${user.username} and click the button again.` }))
+                          const result = await sendCardDM(user.access_token, { id: senderId }, buildFollowGateCard(gateCardParams(content, user.username, match.id, { title: "❌ Not Following Yet!", subtitle: `We couldn't verify your follow. Please follow @${user.username} and click the button again.` })))
                           if (result?.ok && conv) {
                             try {
                               await supabase.from("messages").insert({
@@ -728,7 +747,7 @@ export async function POST(request: NextRequest) {
                                                     }
                                                   } else {
                                                     console.warn(`[webhook] ⚠️ DM unlock unverifiable (attempt ${attempts}/${UNLOCK_GATE_MAX_ATTEMPTS}) for @${senderId}`)
-                                                    const result = await sendCardDM(user.access_token, { id: senderId }, buildFollowGateCard({ username: user.username, ruleId: match.id, subtitle: `Please follow @${user.username} to see this!` }))
+                                                    const result = await sendCardDM(user.access_token, { id: senderId }, buildFollowGateCard(gateCardParams(content, user.username, match.id, { subtitle: `Please follow @${user.username} to see this!` })))
                                                     if (result?.ok && conv) {
                                                       try {
                                                         await supabase.from("messages").insert({
@@ -772,7 +791,7 @@ export async function POST(request: NextRequest) {
                         } else if (followResult.follows === false) {
                           await clearUnlockAttempts(attemptKey)
                           console.log(`[webhook] 🔒 DM follower gate: @${senderId} doesn't follow @${user.username}`)
-                          const result = await sendCardDM(user.access_token, { id: senderId }, buildFollowGateCard({ username: user.username, ruleId: match.id, subtitle: `Please follow @${user.username} to see this!` }))
+                          const result = await sendCardDM(user.access_token, { id: senderId }, buildFollowGateCard(gateCardParams(content, user.username, match.id, { subtitle: `Please follow @${user.username} to see this!` })))
                           if (result?.ok && conv) {
                             try {
                               await supabase.from("messages").insert({
@@ -795,7 +814,7 @@ export async function POST(request: NextRequest) {
                           const isAuthError = followResult.error === 'auth'
                           if (isAuthError) {
                             console.warn(`[webhook] ⚠️ DM follower gate auth failure for @${senderId}; sending gate`)
-                            const result = await sendCardDM(user.access_token, { id: senderId }, buildFollowGateCard({ username: user.username, ruleId: match.id, title: "❌ Verification Failed", subtitle: `We can't verify your follow status. Please follow @${user.username} and try again.` }))
+                            const result = await sendCardDM(user.access_token, { id: senderId }, buildFollowGateCard(gateCardParams(content, user.username, match.id, { title: "❌ Verification Failed", subtitle: `We can't verify your follow status. Please follow @${user.username} and try again.` })))
                             if (result?.ok && conv) {
                               try {
                                 await supabase.from("messages").insert({

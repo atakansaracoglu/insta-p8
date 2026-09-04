@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getSupabaseServerClient } from "@/lib/supabase-server"
+import { verifySession } from "@/lib/auth"
 
 export async function POST(request: NextRequest) {
     try {
@@ -9,6 +10,7 @@ export async function POST(request: NextRequest) {
         if (!userId || !recipientId || (!message && !attachment)) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
         }
+        if (!(await verifySession(userId))) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
         const supabase = await getSupabaseServerClient()
 

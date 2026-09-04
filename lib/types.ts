@@ -32,6 +32,9 @@ export interface ResponseContent {
   media?: MediaResponse
   quick_replies?: { title: string; payload?: string }[]
   check_follow?: boolean
+  follow_gate_title?: string
+  follow_gate_subtitle?: string
+  follow_gate_button?: string
   // Comment automation options
   reply_mode?: "both" | "dm_only" | "public_only"
   public_replies?: string[]
@@ -67,6 +70,7 @@ export interface Automation {
   trigger_type: "keyword" | "postback" | "reply_all" | "mention" | "reaction" | "reply"
   response_content: ResponseContent
   is_active: boolean
+  trigger_count: number
   created_at: string
   specific_media_id?: string | null
   media_selection?: MediaSelection | null

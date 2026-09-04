@@ -61,6 +61,9 @@ export function CreateRuleForm({ userId, triggerSource, onSuccess, editRule }: C
   /* ---------- EXTRAS ---------- */
   const [name, setName] = useState("")
   const [checkFollow, setCheckFollow] = useState(false)
+  const [followGateTitle, setFollowGateTitle] = useState("")
+  const [followGateSubtitle, setFollowGateSubtitle] = useState("")
+  const [followGateButton, setFollowGateButton] = useState("")
   const [delaySeconds, setDelaySeconds] = useState(0)
   const [typingIndicator, setTypingIndicator] = useState(false)
 
@@ -114,6 +117,9 @@ export function CreateRuleForm({ userId, triggerSource, onSuccess, editRule }: C
     setPublicReplies(content.public_replies || [])
     setIncludeReplies(content.include_replies === true)
     setCheckFollow(content.check_follow === true)
+    setFollowGateTitle(content.follow_gate_title || "")
+    setFollowGateSubtitle(content.follow_gate_subtitle || "")
+    setFollowGateButton(content.follow_gate_button || "")
     setDelaySeconds(Number(content.delay_seconds) || 0)
     setTypingIndicator(content.typing_indicator === true)
     
@@ -194,6 +200,11 @@ export function CreateRuleForm({ userId, triggerSource, onSuccess, editRule }: C
     const isReplyAll = triggerSource === "comment" && triggers.length === 0
 
     const content: any = { check_follow: checkFollow }
+    if (checkFollow) {
+      if (followGateTitle.trim()) content.follow_gate_title = followGateTitle.trim()
+      if (followGateSubtitle.trim()) content.follow_gate_subtitle = followGateSubtitle.trim()
+      if (followGateButton.trim()) content.follow_gate_button = followGateButton.trim()
+    }
     if (delaySeconds > 0) content.delay_seconds = delaySeconds
     if (typingIndicator) content.typing_indicator = true
     if (triggerSource === "comment") {
@@ -683,6 +694,14 @@ export function CreateRuleForm({ userId, triggerSource, onSuccess, editRule }: C
               <div className="space-y-4">
                 <FieldLabel>Delivery options</FieldLabel>
                 <ToggleRow icon={<Lock className="w-5 h-5" />} title="Follow gate required" sub="Only followers get the payload. Non-followers get follow prompt first." on={checkFollow} onToggle={() => setCheckFollow(!checkFollow)} />
+                {checkFollow && (
+                  <div className="ml-12 space-y-3 p-4 rounded-xl border border-accent-yellow/20 bg-accent-yellow/[0.03] animate-in fade-in slide-in-from-top-1 duration-200">
+                    <FieldLabel>Customize gate card (leave blank for defaults)</FieldLabel>
+                    <TextField value={followGateTitle} onChange={setFollowGateTitle} placeholder='e.g. "🔒 Follow to Unlock"' />
+                    <TextField value={followGateSubtitle} onChange={setFollowGateSubtitle} placeholder='e.g. "Follow us and tap the button below!"' />
+                    <TextField value={followGateButton} onChange={setFollowGateButton} placeholder='e.g. "I Followed! ✅"' />
+                  </div>
+                )}
                 <ToggleRow icon={<Eye className="w-5 h-5" />} title="Mimic active typing status" sub="Displays typing bubble indicators to look completely organic." on={typingIndicator} onToggle={() => setTypingIndicator(!typingIndicator)} />
                 
                 <div className="flex items-center justify-between p-4 rounded-2xl border border-border bg-white/[0.01]">

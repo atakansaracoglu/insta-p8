@@ -93,6 +93,7 @@ CREATE TABLE IF NOT EXISTS public.automations (
   trigger_source TEXT NOT NULL DEFAULT 'comment' CHECK (trigger_source IN ('comment', 'dm', 'story')),
   follow_up_steps JSONB,
   is_active BOOLEAN DEFAULT TRUE,
+  trigger_count INTEGER NOT NULL DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
@@ -395,6 +396,18 @@ ALTER TABLE public.scheduler_config ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.reels_posts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.dm_queue ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.unlock_attempts ENABLE ROW LEVEL SECURITY;
+
+-- =========================================================================
+-- RPC: increment_trigger_count -- bumps automation trigger counter
+-- =========================================================================
+CREATE OR REPLACE FUNCTION public.increment_trigger_count(p_id UUID)
+RETURNS void
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  UPDATE public.automations SET trigger_count = trigger_count + 1 WHERE id = p_id;
+END;
+$$;
 
 -- =========================================================================
 -- RPC: bump_unlock_attempt -- atomic increment with TTL reset

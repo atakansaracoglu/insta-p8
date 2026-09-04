@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import {
   Trash2, Globe, Instagram, Zap, ArrowRight, Lock, MessageCircle, Send,
-  Pencil, Copy, Image as ImageIcon, Megaphone, EyeOff, Timer,
+  Pencil, Copy, Image as ImageIcon, Megaphone, EyeOff, Timer, Hash,
 } from "lucide-react"
 import type { Automation } from "@/lib/types"
 import { toast } from "sonner"
@@ -285,6 +285,11 @@ function RuleCard({ rule, onDelete, onEdit, onToggle, onDuplicate, index, isSpec
             {content.check_follow && (
               <Badge variant="secondary" className="bg-accent-yellow/10 text-accent-yellow-foreground dark:text-accent-yellow border border-accent-yellow/30 text-[10px] px-1.5 py-0">
                 <Lock className="w-2.5 h-2.5 mr-0.5" /> Follow
+              </Badge>
+            )}
+            {(rule.trigger_count ?? 0) > 0 && (
+              <Badge variant="secondary" className="bg-accent-yellow/10 text-accent-yellow-foreground dark:text-accent-yellow border border-accent-yellow/30 text-[10px] px-1.5 py-0">
+                <Hash className="w-2.5 h-2.5 mr-0.5" /> {rule.trigger_count.toLocaleString()}
               </Badge>
             )}
             {isPaused && (
