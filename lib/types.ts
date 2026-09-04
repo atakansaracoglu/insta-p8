@@ -35,6 +35,7 @@ export interface ResponseContent {
   follow_gate_title?: string
   follow_gate_subtitle?: string
   follow_gate_button?: string
+  follow_gate_follow_button?: string
   // Comment automation options
   reply_mode?: "both" | "dm_only" | "public_only"
   public_replies?: string[]

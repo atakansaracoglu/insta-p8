@@ -52,6 +52,7 @@ function gateCardParams(content: any, username: string, ruleId: string, override
     title: overrides?.title ?? content.follow_gate_title ?? undefined,
     subtitle: overrides?.subtitle ?? content.follow_gate_subtitle ?? undefined,
     buttonText: content.follow_gate_button ?? undefined,
+    followButtonText: content.follow_gate_follow_button ?? undefined,
   }
 }
 

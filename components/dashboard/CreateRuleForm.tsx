@@ -64,6 +64,7 @@ export function CreateRuleForm({ userId, triggerSource, onSuccess, editRule }: C
   const [followGateTitle, setFollowGateTitle] = useState("")
   const [followGateSubtitle, setFollowGateSubtitle] = useState("")
   const [followGateButton, setFollowGateButton] = useState("")
+  const [followGateFollowButton, setFollowGateFollowButton] = useState("")
   const [delaySeconds, setDelaySeconds] = useState(0)
   const [typingIndicator, setTypingIndicator] = useState(false)
 
@@ -120,6 +121,7 @@ export function CreateRuleForm({ userId, triggerSource, onSuccess, editRule }: C
     setFollowGateTitle(content.follow_gate_title || "")
     setFollowGateSubtitle(content.follow_gate_subtitle || "")
     setFollowGateButton(content.follow_gate_button || "")
+    setFollowGateFollowButton(content.follow_gate_follow_button || "")
     setDelaySeconds(Number(content.delay_seconds) || 0)
     setTypingIndicator(content.typing_indicator === true)
     
@@ -204,6 +206,7 @@ export function CreateRuleForm({ userId, triggerSource, onSuccess, editRule }: C
       if (followGateTitle.trim()) content.follow_gate_title = followGateTitle.trim()
       if (followGateSubtitle.trim()) content.follow_gate_subtitle = followGateSubtitle.trim()
       if (followGateButton.trim()) content.follow_gate_button = followGateButton.trim()
+      if (followGateFollowButton.trim()) content.follow_gate_follow_button = followGateFollowButton.trim()
     }
     if (delaySeconds > 0) content.delay_seconds = delaySeconds
     if (typingIndicator) content.typing_indicator = true
@@ -699,7 +702,8 @@ export function CreateRuleForm({ userId, triggerSource, onSuccess, editRule }: C
                     <FieldLabel>Customize gate card (leave blank for defaults)</FieldLabel>
                     <TextField value={followGateTitle} onChange={setFollowGateTitle} placeholder='e.g. "🔒 Follow to Unlock"' />
                     <TextField value={followGateSubtitle} onChange={setFollowGateSubtitle} placeholder='e.g. "Follow us and tap the button below!"' />
-                    <TextField value={followGateButton} onChange={setFollowGateButton} placeholder='e.g. "I Followed! ✅"' />
+                    <TextField value={followGateFollowButton} onChange={setFollowGateFollowButton} placeholder='e.g. "Follow" (profile link button)' />
+                    <TextField value={followGateButton} onChange={setFollowGateButton} placeholder='e.g. "I Followed! ✅" (confirm button)' />
                   </div>
                 )}
                 <ToggleRow icon={<Eye className="w-5 h-5" />} title="Mimic active typing status" sub="Displays typing bubble indicators to look completely organic." on={typingIndicator} onToggle={() => setTypingIndicator(!typingIndicator)} />
