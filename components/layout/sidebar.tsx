@@ -9,14 +9,16 @@ import {
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { LanguageSwitcher } from "@/components/layout/language-switcher"
+import { useLang } from "@/components/lang-provider"
 
-const NAV = [
-  { href: "/dashboard", icon: LayoutDashboard, label: "Overview" },
-  { href: "/dashboard/automations", icon: Zap, label: "Automations" },
-  { href: "/dashboard/inbox", icon: MessageSquare, label: "Inbox" },
-  { href: "/dashboard/ice-breakers", icon: Snowflake, label: "Ice breakers" },
-  { href: "/dashboard/audience", icon: Users, label: "Audience" },
-  { href: "/dashboard/analytics", icon: BarChart3, label: "Analytics" },
+const NAV_KEYS = [
+  { href: "/dashboard", icon: LayoutDashboard, key: "nav.overview" },
+  { href: "/dashboard/automations", icon: Zap, key: "nav.automations" },
+  { href: "/dashboard/inbox", icon: MessageSquare, key: "nav.inbox" },
+  { href: "/dashboard/ice-breakers", icon: Snowflake, key: "nav.icebreakers" },
+  { href: "/dashboard/audience", icon: Users, key: "nav.audience" },
+  { href: "/dashboard/analytics", icon: BarChart3, key: "nav.analytics" },
 ]
 
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -29,6 +31,7 @@ interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {
 
 export function Sidebar({ className, username = "creator", profilePic, onLogout, onNavigate, ...props }: SidebarProps) {
   const pathname = usePathname()
+  const { lang, setLang, t } = useLang()
 
   return (
     <aside className={cn("flex flex-col bg-sidebar text-sidebar-foreground", className)} {...props}>
@@ -45,7 +48,7 @@ export function Sidebar({ className, username = "creator", profilePic, onLogout,
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-0.5">
-        {NAV.map(({ href, icon: Icon, label }) => {
+        {NAV_KEYS.map(({ href, icon: Icon, key }) => {
           const active = pathname === href
           return (
             <Link
@@ -62,7 +65,7 @@ export function Sidebar({ className, username = "creator", profilePic, onLogout,
             >
               {active && <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-full bg-accent-yellow" />}
               <Icon className={cn("w-4 h-4 shrink-0", active ? "text-accent-yellow" : "")} strokeWidth={active ? 2.2 : 1.8} />
-              <span>{label}</span>
+              <span>{t(key)}</span>
             </Link>
           )
         })}
@@ -84,7 +87,7 @@ export function Sidebar({ className, username = "creator", profilePic, onLogout,
         >
           {pathname === "/dashboard/settings" && <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-full bg-accent-yellow" />}
           <Settings className="w-4 h-4 shrink-0" strokeWidth={1.8} />
-          <span>Settings</span>
+          <span>{t("nav.settings")}</span>
         </Link>
 
         <a
@@ -94,9 +97,14 @@ export function Sidebar({ className, username = "creator", profilePic, onLogout,
           className="flex items-center gap-3 px-3 py-2 rounded-md text-[13px] text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
         >
           <Send className="w-4 h-4 shrink-0" strokeWidth={1.8} />
-          <span>Get help</span>
+          <span>{t("nav.help")}</span>
         </a>
       </nav>
+
+      {/* Language Switcher */}
+      <div className="px-3 pb-2">
+        <LanguageSwitcher lang={lang} onChange={setLang} />
+      </div>
 
       {/* Account */}
       <div className="px-3 pb-4">
@@ -113,12 +121,12 @@ export function Sidebar({ className, username = "creator", profilePic, onLogout,
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-xs text-sidebar-foreground truncate">@{username}</p>
-            <p className="font-mono-ui text-[9px] uppercase tracking-wider text-sidebar-foreground/60">connected</p>
+            <p className="font-mono-ui text-[9px] uppercase tracking-wider text-sidebar-foreground/60">{t("nav.connected")}</p>
           </div>
           <button
             onClick={onLogout}
-            title="Log out"
-            aria-label="Log out"
+            title={t("common.logout")}
+            aria-label={t("common.logout")}
             className="p-1.5 rounded-md text-sidebar-foreground/60 hover:text-destructive hover:bg-destructive/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
           >
             <LogOut className="w-3.5 h-3.5" />

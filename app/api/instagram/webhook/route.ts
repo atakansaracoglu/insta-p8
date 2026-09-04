@@ -18,6 +18,7 @@ import {
 } from "@/lib/instagram-api"
 import { generateAIReply } from "@/lib/ai-reply"
 import { bumpUnlockAttempt, clearUnlockAttempts, unlockKey } from "@/lib/unlock-tracking"
+import { DEFAULT_PUBLIC_REPLIES, DEFAULT_OPT_IN, DEFAULT_GATE, type LangCode } from "@/lib/i18n"
 
 const WEBHOOK_VERIFY_TOKEN = process.env.INSTAGRAM_WEBHOOK_VERIFY_TOKEN
 // Meta signs every webhook POST with HMAC-SHA256 of the raw body. Depending on app setup the
@@ -38,7 +39,9 @@ function isValidSignature(rawBody: string, signatureHeader: string | null): bool
   })
 }
 
-const DEFAULT_PUBLIC_REPLIES = ["Check your DMs! 📥", "Sent! 🔥", "Check inbox! ✨"]
+function getDefaultPublicReplies(lang: LangCode): string[] {
+  return DEFAULT_PUBLIC_REPLIES[lang] || DEFAULT_PUBLIC_REPLIES.tr
+}
 
 async function bumpTriggerCount(supabase: any, automationId: string) {
   try {
@@ -47,13 +50,15 @@ async function bumpTriggerCount(supabase: any, automationId: string) {
 }
 
 function gateCardParams(content: any, username: string, ruleId: string, overrides?: { title?: string; subtitle?: string }) {
+  const lang: LangCode = content.lang || "tr"
+  const defaults = DEFAULT_GATE[lang] || DEFAULT_GATE.tr
   return {
     username,
     ruleId,
-    title: overrides?.title ?? content.follow_gate_title ?? undefined,
-    subtitle: overrides?.subtitle ?? content.follow_gate_subtitle ?? undefined,
-    buttonText: content.follow_gate_button ?? undefined,
-    followButtonText: content.follow_gate_follow_button ?? undefined,
+    title: overrides?.title ?? content.follow_gate_title ?? defaults.title,
+    subtitle: overrides?.subtitle ?? content.follow_gate_subtitle ?? defaults.subtitle.replace("@username", `@${username}`),
+    buttonText: content.follow_gate_button ?? defaults.confirmBtn,
+    followButtonText: content.follow_gate_follow_button ?? defaults.followBtn,
   }
 }
 
@@ -344,11 +349,12 @@ export async function POST(request: NextRequest) {
                     const replyMode = content.reply_mode || "both"
 
                     // Helper: pick a public reply from user's rotation list (with defaults fallback)
+                    const ruleLang: LangCode = content.lang || "tr"
                     const getPublicReply = (): string => {
                       const pool: string[] =
                         Array.isArray(content.public_replies) && content.public_replies.filter(Boolean).length > 0
                           ? content.public_replies.filter(Boolean)
-                          : DEFAULT_PUBLIC_REPLIES
+                          : getDefaultPublicReplies(ruleLang)
                       return pickRandom(pool)
                     }
 
@@ -362,13 +368,14 @@ export async function POST(request: NextRequest) {
                         await replyToComment(user.access_token, commentId, getPublicReply())
                       }
                       if (replyMode !== "public_only") {
+                        const optInDefaults = DEFAULT_OPT_IN[ruleLang] || DEFAULT_OPT_IN.tr
                         await sendCardDM(
                           user.access_token,
                           { comment_id: commentId },
                           buildOptInCard({
                             ruleId: match.id,
-                            message: content.opt_in_message,
-                            buttonText: content.opt_in_button,
+                            message: content.opt_in_message || optInDefaults.message,
+                            buttonText: content.opt_in_button || optInDefaults.button,
                           }),
                         )
                       }
@@ -448,13 +455,15 @@ export async function POST(request: NextRequest) {
                                           if (content.check_follow === true) {
                                             // ManyChat-style: send opt-in card first, follow check happens on button tap
                                             console.log(`[webhook] 📩 Story follow-gate: sending opt-in card for rule ${match.id}`)
+                                            const storyLang: LangCode = content.lang || "tr"
+                                            const storyOptIn = DEFAULT_OPT_IN[storyLang] || DEFAULT_OPT_IN.tr
                                             await sendCardDM(
                                               user.access_token,
                                               { id: senderId },
                                               buildOptInCard({
                                                 ruleId: match.id,
-                                                message: content.opt_in_message,
-                                                buttonText: content.opt_in_button,
+                                                message: content.opt_in_message || storyOptIn.message,
+                                                buttonText: content.opt_in_button || storyOptIn.button,
                                               }),
                                             )
                                           } else {

@@ -10,6 +10,8 @@ import {
 } from "lucide-react"
 import { TagInput } from "@/components/ui/tag-input"
 import type { ProButton, QuickReplyOption, Automation } from "@/lib/types"
+import { useLang } from "@/components/lang-provider"
+import { DEFAULT_PUBLIC_REPLIES, DEFAULT_OPT_IN, DEFAULT_GATE, type LangCode } from "@/lib/i18n"
 import { toast } from "sonner"
 
 /* ============================================================
@@ -35,6 +37,7 @@ const STEPS = [
 export function CreateRuleForm({ userId, triggerSource, onSuccess, editRule }: CreateRuleFormProps) {
   const isEditing = !!editRule
   const [step, setStep] = useState(0)
+  const { lang, t } = useLang()
 
   /* ---------- WHEN ---------- */
   const [triggers, setTriggers] = useState<string[]>([])
@@ -55,7 +58,9 @@ export function CreateRuleForm({ userId, triggerSource, onSuccess, editRule }: C
 
   /* ---------- Public comment reply ---------- */
   const [replyMode, setReplyMode] = useState<"both" | "dm_only" | "public_only">("both")
-  const [publicReplies, setPublicReplies] = useState<string[]>([])
+  const [publicReply1, setPublicReply1] = useState("")
+  const [publicReply2, setPublicReply2] = useState("")
+  const [publicReply3, setPublicReply3] = useState("")
   const [includeReplies, setIncludeReplies] = useState(false)
 
   /* ---------- EXTRAS ---------- */
@@ -117,7 +122,10 @@ export function CreateRuleForm({ userId, triggerSource, onSuccess, editRule }: C
     }
     setQuickReplies((content.quick_replies || []).map((q: any, i: number) => ({ id: `${Date.now()}_qr${i}`, title: q.title, payload: q.payload })))
     setReplyMode(content.reply_mode || "both")
-    setPublicReplies(content.public_replies || [])
+    const pr = content.public_replies || []
+    setPublicReply1(pr[0] || "")
+    setPublicReply2(pr[1] || "")
+    setPublicReply3(pr[2] || "")
     setIncludeReplies(content.include_replies === true)
     setCheckFollow(content.check_follow === true)
     setFollowGateTitle(content.follow_gate_title || "")
@@ -205,7 +213,7 @@ export function CreateRuleForm({ userId, triggerSource, onSuccess, editRule }: C
 
     const isReplyAll = triggerSource === "comment" && triggers.length === 0
 
-    const content: any = { check_follow: checkFollow }
+    const content: any = { check_follow: checkFollow, lang }
     if (checkFollow) {
       if (followGateTitle.trim()) content.follow_gate_title = followGateTitle.trim()
       if (followGateSubtitle.trim()) content.follow_gate_subtitle = followGateSubtitle.trim()
@@ -218,7 +226,8 @@ export function CreateRuleForm({ userId, triggerSource, onSuccess, editRule }: C
     if (typingIndicator) content.typing_indicator = true
     if (triggerSource === "comment") {
       content.reply_mode = replyMode
-      if (publicReplies.length > 0) content.public_replies = publicReplies
+      const pr = [publicReply1, publicReply2, publicReply3].map((s) => s.trim()).filter(Boolean)
+      if (pr.length > 0) content.public_replies = pr
       if (includeReplies) content.include_replies = true
     }
     if (quickReplies.filter((q) => q.title.trim()).length > 0) {
@@ -535,9 +544,11 @@ export function CreateRuleForm({ userId, triggerSource, onSuccess, editRule }: C
 
               {triggerSource === "comment" && replyMode !== "dm_only" && (
                 <div className="space-y-2 bg-muted/40 p-5 rounded-2xl border border-border">
-                  <FieldLabel>Public comments rotation</FieldLabel>
-                  <p className="text-[11px] text-muted-foreground mb-3">Add multiple phrases. We rotate them dynamically to look human.</p>
-                  <TagInput value={publicReplies} onChange={setPublicReplies} placeholder={'e.g. "Sent you a DM!", "Check your inbox!"'} />
+                  <FieldLabel>{t("form.publicReplies")}</FieldLabel>
+                  <p className="text-[11px] text-muted-foreground mb-3">{t("form.publicRepliesDesc")}</p>
+                  <TextField value={publicReply1} onChange={setPublicReply1} placeholder={t("form.publicReply1Placeholder")} />
+                  <TextField value={publicReply2} onChange={setPublicReply2} placeholder={t("form.publicReply2Placeholder")} />
+                  <TextField value={publicReply3} onChange={setPublicReply3} placeholder={t("form.publicReply3Placeholder")} />
                 </div>
               )}
 
@@ -866,10 +877,10 @@ export function CreateRuleForm({ userId, triggerSource, onSuccess, editRule }: C
                     <div className="max-w-[80%]">
                       <div className="bg-muted border border-border rounded-2xl overflow-hidden w-48 shadow-2xl">
                         <div className="p-3">
-                          <p className="text-xs font-bold text-foreground">{optInMessage || "Mesajını almak için butona bas 👇"}</p>
+                          <p className="text-xs font-bold text-foreground">{optInMessage || (DEFAULT_OPT_IN[lang] || DEFAULT_OPT_IN.tr).message}</p>
                         </div>
                         <div className="border-t border-border py-2 text-center text-[10px] font-bold text-[#3797f0]">
-                          {optInButton || "Gönder 📩"}
+                          {optInButton || (DEFAULT_OPT_IN[lang] || DEFAULT_OPT_IN.tr).button}
                         </div>
                       </div>
                       <p className="text-[8px] text-muted-foreground font-mono-ui mt-1 text-right">Step 1 · Opt-in</p>
@@ -882,7 +893,7 @@ export function CreateRuleForm({ userId, triggerSource, onSuccess, editRule }: C
                   <div className="flex justify-start items-end gap-1.5">
                     <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-[9px] text-foreground">U</div>
                     <div className="bg-[#1f1f1e] text-foreground rounded-2xl rounded-bl-sm px-3.5 py-2 text-xs max-w-[75%] shadow-md italic text-muted-foreground">
-                      taps "{optInButton || "Gönder 📩"}"
+                      taps "{optInButton || (DEFAULT_OPT_IN[lang] || DEFAULT_OPT_IN.tr).button}"
                     </div>
                   </div>
                 )}
@@ -893,14 +904,14 @@ export function CreateRuleForm({ userId, triggerSource, onSuccess, editRule }: C
                     <div className="max-w-[80%]">
                       <div className="bg-muted border border-border rounded-2xl overflow-hidden w-48 shadow-2xl">
                         <div className="p-3">
-                          <p className="text-xs font-bold text-foreground">{followGateTitle || "Before you lose me"}</p>
-                          <p className="text-[10px] text-muted-foreground mt-1 leading-tight">{followGateSubtitle || "Follow @username to unlock!"}</p>
+                          <p className="text-xs font-bold text-foreground">{followGateTitle || (DEFAULT_GATE[lang] || DEFAULT_GATE.tr).title}</p>
+                          <p className="text-[10px] text-muted-foreground mt-1 leading-tight">{followGateSubtitle || (DEFAULT_GATE[lang] || DEFAULT_GATE.tr).subtitle}</p>
                         </div>
                         <div className="border-t border-border py-2 text-center text-[10px] font-bold text-[#3797f0]">
-                          {followGateFollowButton || "Takip Et"}
+                          {followGateFollowButton || (DEFAULT_GATE[lang] || DEFAULT_GATE.tr).followBtn}
                         </div>
                         <div className="border-t border-border py-2 text-center text-[10px] font-bold text-[#3797f0]">
-                          {followGateButton || "Takip Ettim! ✅"}
+                          {followGateButton || (DEFAULT_GATE[lang] || DEFAULT_GATE.tr).confirmBtn}
                         </div>
                       </div>
                       <p className="text-[8px] text-muted-foreground font-mono-ui mt-1 text-right">Step 2 · Follow gate</p>

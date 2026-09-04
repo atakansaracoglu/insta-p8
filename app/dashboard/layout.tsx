@@ -3,6 +3,7 @@
 import { Sidebar } from "@/components/layout/sidebar"
 import { MobileNav } from "@/components/layout/mobile-nav"
 import { useInstagramSession } from "@/hooks/use-instagram-session"
+import { LangProvider } from "@/components/lang-provider"
 import { Loader2 } from "lucide-react"
 
 export default function DashboardLayout({
@@ -21,6 +22,7 @@ export default function DashboardLayout({
     }
 
     return (
+        <LangProvider>
         <div className="flex min-h-screen bg-background text-foreground">
             {/* Desktop Sidebar */}
             <div className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 z-50">
@@ -45,5 +47,6 @@ export default function DashboardLayout({
                 </main>
             </div>
         </div>
+        </LangProvider>
     )
 }
