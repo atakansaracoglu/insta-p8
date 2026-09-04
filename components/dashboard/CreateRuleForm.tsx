@@ -860,10 +860,61 @@ export function CreateRuleForm({ userId, triggerSource, onSuccess, editRule }: C
                   </div>
                 )}
 
-                {/* Outgoing Reply Bubble */}
+                {/* Step 1: Opt-in card (when follow gate is on) */}
+                {checkFollow && (
+                  <div className="flex justify-end items-end gap-1.5 animate-in fade-in zoom-in-95 duration-200">
+                    <div className="max-w-[80%]">
+                      <div className="bg-muted border border-border rounded-2xl overflow-hidden w-48 shadow-2xl">
+                        <div className="p-3">
+                          <p className="text-xs font-bold text-foreground line-clamp-2">{optInMessage || "Mesajını almak için butona bas 👇"}</p>
+                        </div>
+                        <div className="border-t border-border py-2 text-center text-[10px] font-bold text-[#3797f0]">
+                          {optInButton || "Gönder 📩"}
+                        </div>
+                      </div>
+                      <p className="text-[8px] text-muted-foreground font-mono-ui mt-1 text-right">Step 1 · Opt-in</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* User taps opt-in button */}
+                {checkFollow && (
+                  <div className="flex justify-start items-end gap-1.5">
+                    <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-[9px] text-foreground">U</div>
+                    <div className="bg-[#1f1f1e] text-foreground rounded-2xl rounded-bl-sm px-3.5 py-2 text-xs max-w-[75%] shadow-md italic text-muted-foreground">
+                      taps "{optInButton || "Gönder 📩"}"
+                    </div>
+                  </div>
+                )}
+
+                {/* Step 2a: Follow gate card (if not following) */}
+                {checkFollow && (
+                  <div className="flex justify-end items-end gap-1.5 animate-in fade-in zoom-in-95 duration-200">
+                    <div className="max-w-[80%]">
+                      <div className="bg-muted border border-border rounded-2xl overflow-hidden w-48 shadow-2xl">
+                        <div className="p-3">
+                          <p className="text-xs font-bold text-foreground line-clamp-1">{followGateTitle || "Before you lose me"}</p>
+                          <p className="text-[10px] text-muted-foreground mt-1 line-clamp-2 leading-tight">{followGateSubtitle || "Follow @username to unlock!"}</p>
+                        </div>
+                        <div className="border-t border-border py-2 text-center text-[10px] font-bold text-[#3797f0]">
+                          {followGateFollowButton || "Takip Et"}
+                        </div>
+                        <div className="border-t border-border py-2 text-center text-[10px] font-bold text-[#3797f0]">
+                          {followGateButton || "Takip Ettim! ✅"}
+                        </div>
+                      </div>
+                      <p className="text-[8px] text-muted-foreground font-mono-ui mt-1 text-right">Step 2 · Follow gate</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Step 3 (or Step 1 without gate): Actual content */}
                 {hasDMContent(type, messageText, cardTitle, mediaUrl) ? (
                   <div className="flex justify-end items-end gap-1.5 animate-in fade-in zoom-in-95 duration-200">
                     <div className="max-w-[80%] space-y-1.5 flex flex-col items-end">
+                      {checkFollow && (
+                        <p className="text-[8px] text-green-500 font-mono-ui w-full text-right">✅ Following verified — content delivered</p>
+                      )}
                       {type === "text" && (
                         <div className="bg-[#3797f0] text-foreground rounded-2xl rounded-br-sm px-4 py-2.5 text-xs whitespace-pre-wrap break-words leading-relaxed shadow-lg">
                           {messageText || "Type message content..."}
