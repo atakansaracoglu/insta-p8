@@ -112,7 +112,7 @@ export default function AutomationsPage() {
     if (isSessionLoading) {
         return (
             <div className="h-screen flex items-center justify-center bg-background">
-                <div className="w-6 h-6 border-2 border-border border-t-primary rounded-full animate-spin" />
+                <Loader2 className="w-6 h-6 text-muted-foreground animate-spin" />
             </div>
         )
     }
@@ -139,12 +139,12 @@ export default function AutomationsPage() {
 
     return (
         <div className="min-h-screen bg-background text-foreground">
-            <div className="max-w-5xl mx-auto px-4 md:px-8 py-8 space-y-8">
+            <div className="max-w-5xl mx-auto px-4 md:px-8 py-8 space-y-6">
                 {/* Header */}
                 <div className="flex items-end justify-between gap-4 flex-wrap">
                     <div>
-                        <p className="font-mono-ui text-[10px] uppercase tracking-[0.3em] text-muted-foreground mb-2">{t("auto.rulesEngine")}</p>
-                        <h1 className="font-serif-display text-4xl md:text-5xl text-foreground leading-none">{t("auto.title")}</h1>
+                        <h1 className="text-2xl font-semibold tracking-tight text-foreground">{t("auto.title")}</h1>
+                        <p className="text-muted-foreground text-sm mt-1">{t("auto.rulesEngine")}</p>
                     </div>
                     <div className="flex items-center gap-2">
                         {aiLoading ? (
@@ -154,8 +154,7 @@ export default function AutomationsPage() {
                                 <button
                                     onClick={() => setShowAiContext(!showAiContext)}
                                     aria-expanded={showAiContext}
-                                    aria-controls="ai-context-panel"
-                                    className="w-9 h-9 flex items-center justify-center rounded-full border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-accent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                    className="w-9 h-9 flex items-center justify-center rounded-lg border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
                                     title={t("auto.aiSettings")}
                                     aria-label={t("auto.aiSettings")}
                                 >
@@ -165,9 +164,9 @@ export default function AutomationsPage() {
                                     onClick={handleToggleAI}
                                     disabled={aiToggling}
                                     aria-pressed={aiEnabled}
-                                    className={`flex items-center gap-2 h-9 px-4 rounded-full font-mono-ui text-[11px] font-bold uppercase tracking-widest transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                                    className={`flex items-center gap-2 h-9 px-4 rounded-lg text-xs font-medium transition-all ${
                                         aiEnabled
-                                            ? 'bg-accent-yellow text-accent-yellow-foreground border border-accent-yellow'
+                                            ? 'bg-accent-yellow text-accent-yellow-foreground shadow-sm'
                                             : 'bg-card text-muted-foreground border border-border hover:text-foreground hover:bg-accent'
                                     }`}
                                 >
@@ -182,10 +181,10 @@ export default function AutomationsPage() {
                                 setShowCreateForm(!showCreateForm)
                             }}
                             aria-expanded={showCreateForm}
-                            className={`flex items-center gap-2 h-9 px-5 rounded-full font-mono-ui text-[11px] font-bold uppercase tracking-widest transition-all active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                            className={`flex items-center gap-2 h-9 px-4 rounded-lg text-xs font-medium transition-all ${
                                 showCreateForm
                                     ? 'bg-card text-foreground border border-border hover:bg-accent'
-                                    : 'bg-primary text-primary-foreground hover:opacity-90'
+                                    : 'bg-accent-yellow text-accent-yellow-foreground hover:opacity-90 shadow-sm'
                             }`}
                         >
                             <Plus className={`w-4 h-4 transition-transform duration-200 ${showCreateForm ? 'rotate-45' : ''}`} />
@@ -196,112 +195,70 @@ export default function AutomationsPage() {
 
                 {/* AI Context Panel */}
                 {showAiContext && (
-                    <div className="rounded-2xl border border-[#ffe14d]/20 bg-[#ffe14d]/[0.04] p-5 animate-in fade-in slide-in-from-top-2 duration-200 space-y-4">
+                    <div className="rounded-xl border border-accent-yellow/20 bg-accent-yellow/5 p-5 animate-in fade-in slide-in-from-top-2 duration-200 space-y-4">
                         <div className="flex items-center gap-2">
-                            <Brain className="w-4 h-4 text-[#ffe14d]" />
-                            <span className="text-sm font-semibold text-[#ffe14d]">{t("auto.aiSettings")}</span>
+                            <Brain className="w-4 h-4 text-accent-yellow" />
+                            <span className="text-sm font-medium text-foreground">{t("auto.aiSettings")}</span>
                         </div>
 
-                        {/* API Key */}
                         <div className="space-y-1.5">
                             <div className="flex items-center justify-between">
-                                <label className="text-xs text-neutral-400 font-medium">{t("auto.apiKey")}</label>
-                                {hasApiKey && !showApiKey && (
-                                    <span className="text-[10px] text-emerald-500 font-mono">{t("auto.keySaved")}</span>
-                                )}
+                                <label className="text-xs text-muted-foreground font-medium">{t("auto.apiKey")}</label>
+                                {hasApiKey && !showApiKey && <span className="text-[10px] text-success font-mono">{t("auto.keySaved")}</span>}
                             </div>
                             {showApiKey || !hasApiKey ? (
                                 <div className="flex gap-2">
-                                    <input
-                                        type="password"
-                                        value={groqApiKey}
-                                        onChange={e => setGroqApiKey(e.target.value)}
-                                        placeholder={hasApiKey ? t("auto.enterNewKey") : "sk_… or gsk_…"}
-                                        className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-[#ffe14d]/50 transition-colors font-mono"
-                                    />
-                                    {hasApiKey && (
-                                        <button onClick={() => setShowApiKey(false)} className="px-3 py-2.5 rounded-xl border border-white/10 text-neutral-500 text-xs hover:text-white transition-colors">{t("common.cancel")}</button>
-                                    )}
+                                    <input type="password" value={groqApiKey} onChange={e => setGroqApiKey(e.target.value)} placeholder={hasApiKey ? t("auto.enterNewKey") : "sk_… or gsk_…"} className="flex-1 bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent-yellow/30 font-mono" />
+                                    {hasApiKey && <button onClick={() => setShowApiKey(false)} className="px-3 py-2 rounded-lg border border-border text-muted-foreground text-xs hover:text-foreground transition-colors">{t("common.cancel")}</button>}
                                 </div>
                             ) : (
-                                <button
-                                    onClick={() => setShowApiKey(true)}
-                                    className="w-full text-left px-4 py-2.5 rounded-xl border border-white/10 text-neutral-500 text-sm hover:border-white/20 hover:text-white transition-colors"
-                                >
-                                    •••••••••••••••••••• <span className="text-xs ml-2 text-neutral-600">{t("auto.clickToReplace")}</span>
+                                <button onClick={() => setShowApiKey(true)} className="w-full text-left px-3 py-2 rounded-lg border border-border text-muted-foreground text-sm hover:border-foreground/20 transition-colors">
+                                    •••••••••••••••••••• <span className="text-xs ml-2">{t("auto.clickToReplace")}</span>
                                 </button>
                             )}
                         </div>
 
-                        {/* API Base URL */}
                         <div className="space-y-1.5">
-                            <label className="text-xs text-neutral-400 font-medium">{t("auto.apiBaseUrl")} <span className="text-neutral-600 font-normal">({t("auto.optional")})</span></label>
-                            <input
-                                type="text"
-                                value={aiBaseUrl}
-                                onChange={e => setAiBaseUrl(e.target.value)}
-                                placeholder="https://api.groq.com/v1  (default)"
-                                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-[#ffe14d]/50 transition-colors font-mono"
-                            />
-                            <p className="text-[11px] text-neutral-600">{t("auto.apiBaseUrlHint")}</p>
+                            <label className="text-xs text-muted-foreground font-medium">{t("auto.apiBaseUrl")} <span className="text-muted-foreground/60">({t("auto.optional")})</span></label>
+                            <input type="text" value={aiBaseUrl} onChange={e => setAiBaseUrl(e.target.value)} placeholder="https://api.groq.com/v1" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent-yellow/30 font-mono" />
                         </div>
 
-                        {/* Model */}
                         <div className="space-y-1.5">
-                            <label className="text-xs text-neutral-400 font-medium">{t("auto.model")} <span className="text-neutral-600 font-normal">({t("auto.optional")})</span></label>
-                            <input
-                                type="text"
-                                value={aiModel}
-                                onChange={e => setAiModel(e.target.value)}
-                                placeholder="llama-3.1-8b-instant  (Groq default)"
-                                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-[#ffe14d]/50 transition-colors font-mono"
-                            />
+                            <label className="text-xs text-muted-foreground font-medium">{t("auto.model")} <span className="text-muted-foreground/60">({t("auto.optional")})</span></label>
+                            <input type="text" value={aiModel} onChange={e => setAiModel(e.target.value)} placeholder="llama-3.1-8b-instant" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent-yellow/30 font-mono" />
                         </div>
 
-                        {/* AI Personality Context */}
                         <div className="space-y-1.5">
-                            <label className="text-xs text-neutral-400 font-medium">{t("auto.aiContext")}</label>
-                            <p className="text-[11px] text-neutral-600">{t("auto.aiContextHint")}</p>
-                            <textarea
-                                value={aiContext}
-                                onChange={e => setAiContext(e.target.value)}
-                                placeholder={`e.g. This is a fitness coaching account. I sell online training programs (₹2999/mo). My tone is motivating but chill. If someone asks about pricing, tell them to DM for a free consultation. Never promise specific results.`}
-                                rows={4}
-                                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-neutral-600 resize-none focus:outline-none focus:border-[#ffe14d]/50 transition-colors"
-                            />
+                            <label className="text-xs text-muted-foreground font-medium">{t("auto.aiContext")}</label>
+                            <p className="text-[11px] text-muted-foreground">{t("auto.aiContextHint")}</p>
+                            <textarea value={aiContext} onChange={e => setAiContext(e.target.value)} placeholder="e.g. This is a fitness coaching account..." rows={3} className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-2 focus:ring-accent-yellow/30" />
                         </div>
 
-                        <button
-                            onClick={handleSaveAiContext}
-                            disabled={aiContextSaving}
-                            className="px-4 py-2 rounded-xl bg-[#ffe14d] hover:brightness-95 text-black text-xs font-bold transition-all disabled:opacity-50"
-                        >
+                        <button onClick={handleSaveAiContext} disabled={aiContextSaving} className="px-4 py-2 rounded-lg bg-accent-yellow text-accent-yellow-foreground text-xs font-medium hover:opacity-90 disabled:opacity-50 transition-opacity shadow-sm">
                             {aiContextSaving ? t("common.saving") : aiContextSaved ? t("common.saved") : t("common.save")}
                         </button>
                     </div>
                 )}
 
                 {/* Tabs */}
-                <div className="flex items-center gap-6 border-b border-border overflow-x-auto">
+                <div className="flex items-center gap-1 bg-secondary rounded-lg p-0.5 w-fit">
                     {tabs.map((tab) => {
                         const isActive = activeTab === tab.key
                         return (
                             <button
                                 key={tab.key}
                                 onClick={() => setActiveTab(tab.key)}
-                                className={`relative flex items-center gap-2 pb-3 -mb-px font-mono-ui text-xs uppercase tracking-widest transition-colors border-b-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm ${
+                                className={`flex items-center gap-2 px-4 py-2 rounded-md text-xs font-medium transition-all ${
                                     isActive
-                                        ? 'text-foreground border-accent-yellow'
-                                        : 'text-muted-foreground border-transparent hover:text-foreground'
+                                        ? 'bg-card text-foreground shadow-sm'
+                                        : 'text-muted-foreground hover:text-foreground'
                                 }`}
                             >
                                 {tab.icon}
                                 <span>{tab.label}</span>
                                 {tab.count > 0 && (
-                                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-                                        isActive
-                                            ? 'bg-accent-yellow text-accent-yellow-foreground'
-                                            : 'bg-secondary text-secondary-foreground'
+                                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                                        isActive ? 'bg-accent-yellow text-accent-yellow-foreground' : 'bg-muted text-muted-foreground'
                                     }`}>
                                         {tab.count}
                                     </span>
@@ -311,9 +268,8 @@ export default function AutomationsPage() {
                     })}
                 </div>
 
-                {/* Create Form (Collapsible) */}
                 {showCreateForm && (
-                    <div className="rounded-2xl border border-border bg-card p-6 md:p-8 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="rounded-xl border border-border bg-card p-6 animate-in fade-in slide-in-from-top-2 duration-200">
                         <CreateRuleForm
                             userId={userId}
                             triggerSource={editRule ? editRule.trigger_source : activeTab}
@@ -327,10 +283,9 @@ export default function AutomationsPage() {
                     </div>
                 )}
 
-                {/* Automation List */}
                 {isLoading ? (
                     <div className="flex items-center justify-center py-16">
-                        <div className="w-6 h-6 border-2 border-border border-t-primary rounded-full animate-spin" />
+                        <Loader2 className="w-6 h-6 text-muted-foreground animate-spin" />
                     </div>
                 ) : (
                     <AutomationList
