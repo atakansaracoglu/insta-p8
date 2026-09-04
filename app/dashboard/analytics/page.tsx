@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useInstagramSession } from "@/hooks/use-instagram-session"
 import { Loader2, TrendingUp, Users, Send, Zap, BarChart3 } from "lucide-react"
+import { useLang } from "@/components/lang-provider"
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer,
@@ -18,6 +19,7 @@ export default function AnalyticsPage() {
   const { userId, isLoading: sessionLoading } = useInstagramSession()
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
+  const { t } = useLang()
 
   useEffect(() => {
     if (!userId) return
@@ -40,7 +42,7 @@ export default function AnalyticsPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] text-center p-8">
         <BarChart3 className="w-10 h-10 text-muted-foreground mb-3" />
-        <p className="text-sm text-muted-foreground">Could not load analytics.</p>
+        <p className="text-sm text-muted-foreground">{t("analytics.loadError")}</p>
       </div>
     )
   }
@@ -53,17 +55,17 @@ export default function AnalyticsPage() {
   return (
     <div className="p-8 space-y-6 animate-in fade-in duration-700">
       <div>
-        <p className="font-mono-ui text-[10px] uppercase tracking-[0.3em] text-muted-foreground mb-2">Analytics</p>
-        <h1 className="font-serif-display text-4xl text-foreground">Performance</h1>
+        <p className="font-mono-ui text-[10px] uppercase tracking-[0.3em] text-muted-foreground mb-2">{t("analytics.label")}</p>
+        <h1 className="font-serif-display text-4xl text-foreground">{t("analytics.title")}</h1>
       </div>
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { icon: Zap, value: data.totals.triggers, label: "Total triggers" },
-          { icon: Send, value: data.totals.botMessages, label: "Bot messages" },
-          { icon: TrendingUp, value: data.totals.received, label: "Received" },
-          { icon: Users, value: data.totals.contacts, label: "Contacts" },
+          { icon: Zap, value: data.totals.triggers, label: t("analytics.totalTriggers") },
+          { icon: Send, value: data.totals.botMessages, label: t("analytics.botMessages") },
+          { icon: TrendingUp, value: data.totals.received, label: t("analytics.received") },
+          { icon: Users, value: data.totals.contacts, label: t("analytics.contacts") },
         ].map((s) => (
           <div key={s.label} className="p-5 rounded-2xl border border-border bg-card">
             <s.icon className="w-5 h-5 text-accent-yellow-foreground dark:text-accent-yellow mb-3" />
@@ -76,7 +78,7 @@ export default function AnalyticsPage() {
       {/* Messages over time */}
       {chartData.length > 1 && (
         <div className="rounded-2xl border border-border bg-card p-5">
-          <p className="font-mono-ui text-[10px] uppercase tracking-widest text-muted-foreground mb-4">Messages over time</p>
+          <p className="font-mono-ui text-[10px] uppercase tracking-widest text-muted-foreground mb-4">{t("analytics.messagesOverTime")}</p>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData}>
@@ -101,8 +103,8 @@ export default function AnalyticsPage() {
                     fontSize: 12,
                   }}
                 />
-                <Area type="monotone" dataKey="sent" name="Sent" stroke="hsl(var(--accent-yellow))" fill="url(#sent)" strokeWidth={2} />
-                <Area type="monotone" dataKey="received" name="Received" stroke="hsl(var(--muted-foreground))" fill="url(#recv)" strokeWidth={1.5} />
+                <Area type="monotone" dataKey="sent" name={t("analytics.sent")} stroke="hsl(var(--accent-yellow))" fill="url(#sent)" strokeWidth={2} />
+                <Area type="monotone" dataKey="received" name={t("analytics.received")} stroke="hsl(var(--muted-foreground))" fill="url(#recv)" strokeWidth={1.5} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -112,7 +114,7 @@ export default function AnalyticsPage() {
       {/* Top automations */}
       {data.topAutomations.length > 0 && (
         <div className="rounded-2xl border border-border bg-card p-5">
-          <p className="font-mono-ui text-[10px] uppercase tracking-widest text-muted-foreground mb-4">Top automations by triggers</p>
+          <p className="font-mono-ui text-[10px] uppercase tracking-widest text-muted-foreground mb-4">{t("analytics.topAutomations")}</p>
           {data.topAutomations.some((a) => a.trigger_count > 0) ? (
             <div className="h-56">
               <ResponsiveContainer width="100%" height="100%">
@@ -134,12 +136,12 @@ export default function AnalyticsPage() {
                       fontSize: 12,
                     }}
                   />
-                  <Bar dataKey="trigger_count" name="Triggers" fill="hsl(var(--accent-yellow))" radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="trigger_count" name={t("auto.triggers")} fill="hsl(var(--accent-yellow))" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground py-4 text-center">No triggers recorded yet.</p>
+            <p className="text-sm text-muted-foreground py-4 text-center">{t("analytics.noTriggers")}</p>
           )}
         </div>
       )}
@@ -147,7 +149,7 @@ export default function AnalyticsPage() {
       {chartData.length <= 1 && data.topAutomations.every((a) => !a.trigger_count) && (
         <div className="rounded-2xl border border-dashed border-border p-12 text-center">
           <BarChart3 className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-          <p className="text-sm text-muted-foreground">Not enough data yet. Charts will appear after your automations run.</p>
+          <p className="text-sm text-muted-foreground">{t("analytics.noData")}</p>
         </div>
       )}
     </div>

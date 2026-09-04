@@ -6,6 +6,7 @@ import { AutomationList } from "@/components/dashboard/AutomationList"
 import { CreateRuleForm } from "@/components/dashboard/CreateRuleForm"
 import { MessageCircle, Send, Sparkles, Plus, Brain, Loader2 } from "lucide-react"
 import type { Automation } from "@/lib/types"
+import { useLang } from "@/components/lang-provider"
 
 export default function AutomationsPage() {
     const { userId, isLoading: isSessionLoading } = useInstagramSession()
@@ -26,6 +27,7 @@ export default function AutomationsPage() {
     const [showApiKey, setShowApiKey] = useState(false)
     const [aiBaseUrl, setAiBaseUrl] = useState("")
     const [aiModel, setAiModel] = useState("")
+    const { t } = useLang()
 
     useEffect(() => {
         if (!userId) return
@@ -117,7 +119,7 @@ export default function AutomationsPage() {
     if (!userId) {
         return (
             <div className="h-screen flex items-center justify-center bg-background text-muted-foreground">
-                Please log in
+                {t("auto.pleaseLogin")}
             </div>
         )
     }
@@ -130,9 +132,9 @@ export default function AutomationsPage() {
     }
 
     const tabs = [
-        { key: 'comment' as const, icon: <MessageCircle className="w-4 h-4" />, label: 'Comments', count: counts.comment },
-        { key: 'dm' as const, icon: <Send className="w-4 h-4" />, label: 'DMs', count: counts.dm },
-        { key: 'story' as const, icon: <Sparkles className="w-4 h-4" />, label: 'Stories', count: counts.story },
+        { key: 'comment' as const, icon: <MessageCircle className="w-4 h-4" />, label: t("auto.comments"), count: counts.comment },
+        { key: 'dm' as const, icon: <Send className="w-4 h-4" />, label: t("auto.dms"), count: counts.dm },
+        { key: 'story' as const, icon: <Sparkles className="w-4 h-4" />, label: t("auto.stories"), count: counts.story },
     ]
 
     return (
@@ -141,25 +143,24 @@ export default function AutomationsPage() {
                 {/* Header */}
                 <div className="flex items-end justify-between gap-4 flex-wrap">
                     <div>
-                        <p className="font-mono-ui text-[10px] uppercase tracking-[0.3em] text-muted-foreground mb-2">Rules engine</p>
-                        <h1 className="font-serif-display text-4xl md:text-5xl text-foreground leading-none">Automations</h1>
+                        <p className="font-mono-ui text-[10px] uppercase tracking-[0.3em] text-muted-foreground mb-2">{t("auto.rulesEngine")}</p>
+                        <h1 className="font-serif-display text-4xl md:text-5xl text-foreground leading-none">{t("auto.title")}</h1>
                     </div>
-                    {/* Theme toggle lives in the sidebar — keep this header clean */}
                     <div className="flex items-center gap-2">
                         {aiLoading ? (
                             <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />
                         ) : (
                             <>
                                 <button
-                                                                    onClick={() => setShowAiContext(!showAiContext)}
-                                                                    aria-expanded={showAiContext}
-                                                                    aria-controls="ai-context-panel"
-                                                                    className="w-9 h-9 flex items-center justify-center rounded-full border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-accent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                                                    title="AI settings"
-                                                                    aria-label="AI settings"
-                                                                >
-                                                                    <Brain className="w-4 h-4" />
-                                                                </button>
+                                    onClick={() => setShowAiContext(!showAiContext)}
+                                    aria-expanded={showAiContext}
+                                    aria-controls="ai-context-panel"
+                                    className="w-9 h-9 flex items-center justify-center rounded-full border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-accent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                    title={t("auto.aiSettings")}
+                                    aria-label={t("auto.aiSettings")}
+                                >
+                                    <Brain className="w-4 h-4" />
+                                </button>
                                 <button
                                     onClick={handleToggleAI}
                                     disabled={aiToggling}
@@ -188,7 +189,7 @@ export default function AutomationsPage() {
                             }`}
                         >
                             <Plus className={`w-4 h-4 transition-transform duration-200 ${showCreateForm ? 'rotate-45' : ''}`} />
-                            {showCreateForm ? 'Close' : 'New Rule'}
+                            {showCreateForm ? t("auto.close") : t("auto.newRule")}
                         </button>
                     </div>
                 </div>
@@ -198,15 +199,15 @@ export default function AutomationsPage() {
                     <div className="rounded-2xl border border-[#ffe14d]/20 bg-[#ffe14d]/[0.04] p-5 animate-in fade-in slide-in-from-top-2 duration-200 space-y-4">
                         <div className="flex items-center gap-2">
                             <Brain className="w-4 h-4 text-[#ffe14d]" />
-                            <span className="text-sm font-semibold text-[#ffe14d]">AI Settings</span>
+                            <span className="text-sm font-semibold text-[#ffe14d]">{t("auto.aiSettings")}</span>
                         </div>
 
                         {/* API Key */}
                         <div className="space-y-1.5">
                             <div className="flex items-center justify-between">
-                                <label className="text-xs text-neutral-400 font-medium">API Key</label>
+                                <label className="text-xs text-neutral-400 font-medium">{t("auto.apiKey")}</label>
                                 {hasApiKey && !showApiKey && (
-                                    <span className="text-[10px] text-emerald-500 font-mono">● key saved</span>
+                                    <span className="text-[10px] text-emerald-500 font-mono">{t("auto.keySaved")}</span>
                                 )}
                             </div>
                             {showApiKey || !hasApiKey ? (
@@ -215,11 +216,11 @@ export default function AutomationsPage() {
                                         type="password"
                                         value={groqApiKey}
                                         onChange={e => setGroqApiKey(e.target.value)}
-                                        placeholder={hasApiKey ? "Enter new key to replace…" : "sk_… or gsk_…"}
+                                        placeholder={hasApiKey ? t("auto.enterNewKey") : "sk_… or gsk_…"}
                                         className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-[#ffe14d]/50 transition-colors font-mono"
                                     />
                                     {hasApiKey && (
-                                        <button onClick={() => setShowApiKey(false)} className="px-3 py-2.5 rounded-xl border border-white/10 text-neutral-500 text-xs hover:text-white transition-colors">Cancel</button>
+                                        <button onClick={() => setShowApiKey(false)} className="px-3 py-2.5 rounded-xl border border-white/10 text-neutral-500 text-xs hover:text-white transition-colors">{t("common.cancel")}</button>
                                     )}
                                 </div>
                             ) : (
@@ -227,27 +228,27 @@ export default function AutomationsPage() {
                                     onClick={() => setShowApiKey(true)}
                                     className="w-full text-left px-4 py-2.5 rounded-xl border border-white/10 text-neutral-500 text-sm hover:border-white/20 hover:text-white transition-colors"
                                 >
-                                    •••••••••••••••••••• <span className="text-xs ml-2 text-neutral-600">click to replace</span>
+                                    •••••••••••••••••••• <span className="text-xs ml-2 text-neutral-600">{t("auto.clickToReplace")}</span>
                                 </button>
                             )}
                         </div>
 
                         {/* API Base URL */}
                         <div className="space-y-1.5">
-                            <label className="text-xs text-neutral-400 font-medium">API Base URL <span className="text-neutral-600 font-normal">(optional)</span></label>
+                            <label className="text-xs text-neutral-400 font-medium">{t("auto.apiBaseUrl")} <span className="text-neutral-600 font-normal">({t("auto.optional")})</span></label>
                             <input
                                 type="text"
                                 value={aiBaseUrl}
                                 onChange={e => setAiBaseUrl(e.target.value)}
-                                placeholder="https://api.groq.com/v1  (default) or your own endpoint"
+                                placeholder="https://api.groq.com/v1  (default)"
                                 className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-[#ffe14d]/50 transition-colors font-mono"
                             />
-                            <p className="text-[11px] text-neutral-600">Any OpenAI-compatible endpoint works — Groq, OpenAI, Together, your own proxy.</p>
+                            <p className="text-[11px] text-neutral-600">{t("auto.apiBaseUrlHint")}</p>
                         </div>
 
                         {/* Model */}
                         <div className="space-y-1.5">
-                            <label className="text-xs text-neutral-400 font-medium">Model <span className="text-neutral-600 font-normal">(optional)</span></label>
+                            <label className="text-xs text-neutral-400 font-medium">{t("auto.model")} <span className="text-neutral-600 font-normal">({t("auto.optional")})</span></label>
                             <input
                                 type="text"
                                 value={aiModel}
@@ -259,8 +260,8 @@ export default function AutomationsPage() {
 
                         {/* AI Personality Context */}
                         <div className="space-y-1.5">
-                            <label className="text-xs text-neutral-400 font-medium">AI Personality Context</label>
-                            <p className="text-[11px] text-neutral-600">Tell AI about your account — niche, products, tone, what to say/avoid.</p>
+                            <label className="text-xs text-neutral-400 font-medium">{t("auto.aiContext")}</label>
+                            <p className="text-[11px] text-neutral-600">{t("auto.aiContextHint")}</p>
                             <textarea
                                 value={aiContext}
                                 onChange={e => setAiContext(e.target.value)}
@@ -275,40 +276,40 @@ export default function AutomationsPage() {
                             disabled={aiContextSaving}
                             className="px-4 py-2 rounded-xl bg-[#ffe14d] hover:brightness-95 text-black text-xs font-bold transition-all disabled:opacity-50"
                         >
-                            {aiContextSaving ? 'Saving...' : aiContextSaved ? 'Saved ✓' : 'Save'}
+                            {aiContextSaving ? t("common.saving") : aiContextSaved ? t("common.saved") : t("common.save")}
                         </button>
                     </div>
                 )}
 
-                {/* Tabs — editorial underline */}
-                                <div className="flex items-center gap-6 border-b border-border overflow-x-auto">
-                                    {tabs.map((tab) => {
-                                        const isActive = activeTab === tab.key
-                                        return (
-                                            <button
-                                                key={tab.key}
-                                                onClick={() => setActiveTab(tab.key)}
-                                                className={`relative flex items-center gap-2 pb-3 -mb-px font-mono-ui text-xs uppercase tracking-widest transition-colors border-b-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm ${
-                                                    isActive
-                                                        ? 'text-foreground border-accent-yellow'
-                                                        : 'text-muted-foreground border-transparent hover:text-foreground'
-                                                }`}
-                                            >
-                                                {tab.icon}
-                                                <span>{tab.label}</span>
-                                                {tab.count > 0 && (
-                                                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-                                                        isActive
-                                                            ? 'bg-accent-yellow text-accent-yellow-foreground'
-                                                            : 'bg-secondary text-secondary-foreground'
-                                                    }`}>
-                                                        {tab.count}
-                                                    </span>
-                                                )}
-                                            </button>
-                                        )
-                                    })}
-                                </div>
+                {/* Tabs */}
+                <div className="flex items-center gap-6 border-b border-border overflow-x-auto">
+                    {tabs.map((tab) => {
+                        const isActive = activeTab === tab.key
+                        return (
+                            <button
+                                key={tab.key}
+                                onClick={() => setActiveTab(tab.key)}
+                                className={`relative flex items-center gap-2 pb-3 -mb-px font-mono-ui text-xs uppercase tracking-widest transition-colors border-b-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm ${
+                                    isActive
+                                        ? 'text-foreground border-accent-yellow'
+                                        : 'text-muted-foreground border-transparent hover:text-foreground'
+                                }`}
+                            >
+                                {tab.icon}
+                                <span>{tab.label}</span>
+                                {tab.count > 0 && (
+                                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                                        isActive
+                                            ? 'bg-accent-yellow text-accent-yellow-foreground'
+                                            : 'bg-secondary text-secondary-foreground'
+                                    }`}>
+                                        {tab.count}
+                                    </span>
+                                )}
+                            </button>
+                        )
+                    })}
+                </div>
 
                 {/* Create Form (Collapsible) */}
                 {showCreateForm && (
@@ -325,7 +326,6 @@ export default function AutomationsPage() {
                         />
                     </div>
                 )}
-
 
                 {/* Automation List */}
                 {isLoading ? (

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { Card } from "@/components/ui/card"
 import { useInstagramSession } from "@/hooks/use-instagram-session"
 import { Activity, Users, MessageCircle, Zap, Loader2 } from "lucide-react"
+import { useLang } from "@/components/lang-provider"
 
 interface DashboardStats {
     metrics: {
@@ -26,6 +27,7 @@ export default function DashboardPage() {
     const { username, userId, isLoading: isSessionLoading } = useInstagramSession()
     const [stats, setStats] = useState<DashboardStats | null>(null)
     const [loading, setLoading] = useState(true)
+    const { t } = useLang()
 
     useEffect(() => {
         if (!userId) return
@@ -60,36 +62,36 @@ export default function DashboardPage() {
             {/* Welcome Section */}
             <div className="flex items-center justify-between">
                 <div>
-                    <p className="font-mono-ui text-[10px] uppercase tracking-[0.3em] text-muted-foreground mb-2">Overview</p>
-                    <h1 className="font-serif-display text-4xl md:text-5xl text-foreground leading-none">Hey, {username}.</h1>
-                    <p className="text-muted-foreground text-sm mt-3">Here's what your automations did while you were away.</p>
+                    <p className="font-mono-ui text-[10px] uppercase tracking-[0.3em] text-muted-foreground mb-2">{t("dash.title")}</p>
+                    <h1 className="font-serif-display text-4xl md:text-5xl text-foreground leading-none">{t("dash.greeting").replace("{name}", username || "")}</h1>
+                    <p className="text-muted-foreground text-sm mt-3">{t("dash.subtitle")}</p>
                 </div>
             </div>
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard
-                    title="Total Automations"
+                    title={t("dash.totalAutomations")}
                     value={stats?.metrics.totalAutomations.toString() || "0"}
-                    trend="Active"
+                    trend={t("dash.active")}
                     icon={<Zap className="w-5 h-5 text-accent-yellow-foreground dark:text-accent-yellow" />}
                 />
                 <StatCard
-                    title="Messages Sent"
+                    title={t("dash.messagesSent")}
                     value={stats?.metrics.messagesSent.toString() || "0"}
-                    trend="Lifetime"
+                    trend={t("dash.lifetime")}
                     icon={<MessageCircle className="w-5 h-5 text-accent-yellow-foreground dark:text-accent-yellow" />}
                 />
                 <StatCard
-                    title="Active Triggers"
+                    title={t("dash.activeTriggers")}
                     value={stats?.metrics.activeTriggers.toString() || "0"}
-                    trend="Running"
+                    trend={t("dash.running")}
                     icon={<Activity className="w-5 h-5 text-accent-yellow-foreground dark:text-accent-yellow" />}
                 />
                 <StatCard
-                    title="Audience Reached"
+                    title={t("dash.audienceReached")}
                     value={stats?.metrics.audienceReached.toString() || "0"}
-                    trend="Unique Users"
+                    trend={t("dash.uniqueUsers")}
                     icon={<Users className="w-5 h-5 text-accent-yellow-foreground dark:text-accent-yellow" />}
                 />
             </div>
@@ -97,7 +99,7 @@ export default function DashboardPage() {
             {/* Recent Activity */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <Card className="p-6 bg-card border-border">
-                    <h3 className="font-serif-display text-2xl text-foreground mb-5">Recent activity</h3>
+                    <h3 className="font-serif-display text-2xl text-foreground mb-5">{t("dash.recentActivity")}</h3>
                     <div className="space-y-4">
                         {stats?.recentActivity && stats.recentActivity.length > 0 ? (
                             stats.recentActivity.map((msg) => (
@@ -107,7 +109,7 @@ export default function DashboardPage() {
                                     </div>
                                     <div className="min-w-0">
                                         <p className="text-sm text-foreground font-medium truncate">
-                                            Auto-reply to @{msg.recipient?.recipient_username || "user"}
+                                            {t("dash.autoReplyTo").replace("{name}", msg.recipient?.recipient_username || "user")}
                                         </p>
                                         <p className="text-xs text-muted-foreground truncate w-full max-w-[300px]">{msg.content}</p>
                                     </div>
@@ -118,22 +120,22 @@ export default function DashboardPage() {
                             ))
                         ) : (
                             <div className="py-8 text-center text-muted-foreground text-sm">
-                                No recent activity found.
+                                {t("dash.noActivity")}
                             </div>
                         )}
                     </div>
                 </Card>
 
                 <Card className="p-6 bg-card border-border">
-                    <h3 className="font-serif-display text-2xl text-foreground mb-5">Quick actions</h3>
+                    <h3 className="font-serif-display text-2xl text-foreground mb-5">{t("dash.quickActions")}</h3>
                     <div className="grid grid-cols-2 gap-4">
                         <div className="h-24 rounded-xl border border-dashed border-border flex flex-col items-center justify-center hover:bg-accent hover:border-accent-yellow cursor-pointer transition-colors group">
                             <Zap className="w-6 h-6 text-muted-foreground group-hover:text-accent-yellow-foreground dark:group-hover:text-accent-yellow mb-2 transition-colors" />
-                            <span className="text-xs font-medium text-foreground">New Rule</span>
+                            <span className="text-xs font-medium text-foreground">{t("dash.newRule")}</span>
                         </div>
                         <div className="h-24 rounded-xl border border-dashed border-border flex flex-col items-center justify-center hover:bg-accent hover:border-accent-yellow cursor-pointer transition-colors group">
                             <Users className="w-6 h-6 text-muted-foreground group-hover:text-accent-yellow-foreground dark:group-hover:text-accent-yellow mb-2 transition-colors" />
-                            <span className="text-xs font-medium text-foreground">View Audience</span>
+                            <span className="text-xs font-medium text-foreground">{t("dash.viewAudience")}</span>
                         </div>
                     </div>
                 </Card>

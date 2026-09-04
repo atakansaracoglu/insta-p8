@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useInstagramSession } from "@/hooks/use-instagram-session"
 import { Users, MessageCircle, Send, Loader2, Search } from "lucide-react"
+import { useLang } from "@/components/lang-provider"
 
 interface AudienceMember {
   id: string
@@ -19,6 +20,7 @@ export default function AudiencePage() {
   const [audience, setAudience] = useState<AudienceMember[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
+  const { t } = useLang()
 
   useEffect(() => {
     if (!userId) return
@@ -44,9 +46,9 @@ export default function AudiencePage() {
   return (
     <div className="p-8 space-y-6 animate-in fade-in duration-700">
       <div>
-        <p className="font-mono-ui text-[10px] uppercase tracking-[0.3em] text-muted-foreground mb-2">Audience</p>
-        <h1 className="font-serif-display text-4xl text-foreground">Your contacts</h1>
-        <p className="text-muted-foreground text-sm mt-2">People who interacted with your automations.</p>
+        <p className="font-mono-ui text-[10px] uppercase tracking-[0.3em] text-muted-foreground mb-2">{t("nav.audience")}</p>
+        <h1 className="font-serif-display text-4xl text-foreground">{t("audience.title")}</h1>
+        <p className="text-muted-foreground text-sm mt-2">{t("audience.subtitle")}</p>
       </div>
 
       {/* Stats */}
@@ -54,17 +56,17 @@ export default function AudiencePage() {
         <div className="p-5 rounded-2xl border border-border bg-card">
           <Users className="w-5 h-5 text-accent-yellow-foreground dark:text-accent-yellow mb-3" />
           <p className="font-serif-display text-3xl text-foreground">{audience.length}</p>
-          <p className="font-mono-ui text-[10px] uppercase tracking-widest text-muted-foreground mt-1">Total contacts</p>
+          <p className="font-mono-ui text-[10px] uppercase tracking-widest text-muted-foreground mt-1">{t("audience.totalContacts")}</p>
         </div>
         <div className="p-5 rounded-2xl border border-border bg-card">
           <MessageCircle className="w-5 h-5 text-accent-yellow-foreground dark:text-accent-yellow mb-3" />
           <p className="font-serif-display text-3xl text-foreground">{audience.reduce((s, a) => s + a.message_count, 0)}</p>
-          <p className="font-mono-ui text-[10px] uppercase tracking-widest text-muted-foreground mt-1">Total messages</p>
+          <p className="font-mono-ui text-[10px] uppercase tracking-widest text-muted-foreground mt-1">{t("audience.totalMessages")}</p>
         </div>
         <div className="p-5 rounded-2xl border border-border bg-card">
           <Send className="w-5 h-5 text-accent-yellow-foreground dark:text-accent-yellow mb-3" />
           <p className="font-serif-display text-3xl text-foreground">{audience.reduce((s, a) => s + a.bot_messages, 0)}</p>
-          <p className="font-mono-ui text-[10px] uppercase tracking-widest text-muted-foreground mt-1">Bot messages sent</p>
+          <p className="font-mono-ui text-[10px] uppercase tracking-widest text-muted-foreground mt-1">{t("audience.botMessages")}</p>
         </div>
       </div>
 
@@ -74,7 +76,7 @@ export default function AudiencePage() {
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search contacts..."
+          placeholder={t("audience.search")}
           className="w-full h-10 pl-10 pr-4 bg-card border border-border rounded-xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent-yellow/50"
         />
       </div>
@@ -84,7 +86,7 @@ export default function AudiencePage() {
         <div className="rounded-2xl border border-dashed border-border p-12 text-center">
           <Users className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
           <p className="text-sm text-muted-foreground">
-            {audience.length === 0 ? "No contacts yet — they'll appear after your first automation runs." : "No matching contacts."}
+            {audience.length === 0 ? t("audience.noContacts") : t("audience.noMatch")}
           </p>
         </div>
       ) : (
@@ -92,11 +94,11 @@ export default function AudiencePage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-muted/50 text-muted-foreground text-[10px] font-mono-ui uppercase tracking-widest">
-                <th className="text-left px-4 py-3">Username</th>
-                <th className="text-center px-4 py-3">Messages</th>
-                <th className="text-center px-4 py-3">Bot replies</th>
-                <th className="text-right px-4 py-3">First contact</th>
-                <th className="text-right px-4 py-3">Last active</th>
+                <th className="text-left px-4 py-3">{t("audience.username")}</th>
+                <th className="text-center px-4 py-3">{t("audience.messages")}</th>
+                <th className="text-center px-4 py-3">{t("audience.botReplies")}</th>
+                <th className="text-right px-4 py-3">{t("audience.firstContact")}</th>
+                <th className="text-right px-4 py-3">{t("audience.lastActive")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
