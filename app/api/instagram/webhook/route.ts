@@ -14,6 +14,7 @@ import {
   verifyIdOwnership,
   sleep,
   buildFollowGateCard,
+  buildOptInCard,
 } from "@/lib/instagram-api"
 import { generateAIReply } from "@/lib/ai-reply"
 import { bumpUnlockAttempt, clearUnlockAttempts, unlockKey } from "@/lib/unlock-tracking"
@@ -352,68 +353,24 @@ export async function POST(request: NextRequest) {
                     }
 
                     // ===== FOLLOWER GATE FOR COMMENTS =====
-                    // The gate card is delivered as a *private reply* to the comment. recipient.id
-                    // alone won't open a DM with someone who has never messaged the account; private
-                    // replies to a comment need comment_id.
+                    // ManyChat-style flow: comment → opt-in card ("Gönder" button) → user taps →
+                    // follow check in DM handler (OPT_IN_ postback) → content or gate.
+                    // We never check follow on the comment itself — that happens when they tap.
                     if (content.check_follow === true) {
-                      const followResult = await verifyFollowStatus(senderId, user.access_token)
-
-                      if (followResult.follows === true) {
-                        console.log(`[webhook] ✅ Comment follower gate: @${senderId} follows @${user.username} — sending content`)
-                        if (replyMode !== "dm_only") {
-                          await replyToComment(user.access_token, commentId, getPublicReply())
-                        }
-                        if (replyMode !== "public_only") {
-                          await sendAutomationResponse(
-                            user.access_token,
-                            { comment_id: commentId },
-                            content,
-                            { skipTyping: true },
-                          )
-                        }
-                      } else if (followResult.follows === false) {
-                        console.log(`[webhook] 🔒 Comment follower gate: @${senderId} doesn't follow @${user.username}`)
-                        if (replyMode !== "dm_only") {
-                          await replyToComment(user.access_token, commentId, getPublicReply())
-                        }
-                        if (replyMode !== "public_only") {
-                          await sendCardDM(
-                            user.access_token,
-                            { comment_id: commentId },
-                            buildFollowGateCard(gateCardParams(content, user.username, match.id)),
-                          )
-                        }
-                      } else {
-                        // null → unverifiable. Distinguish auth vs transient.
-                        const isAuthError = followResult.error === 'auth'
-                        if (isAuthError) {
-                          // Auth/permission failure — fail CLOSED: send gate card
-                          console.warn(`[webhook] ⚠️ Comment follower gate auth failure for @${senderId}; sending gate`)
-                          if (replyMode !== "dm_only") {
-                            await replyToComment(user.access_token, commentId, getPublicReply())
-                          }
-                          if (replyMode !== "public_only") {
-                            await sendCardDM(
-                              user.access_token,
-                              { comment_id: commentId },
-                              buildFollowGateCard(gateCardParams(content, user.username, match.id)),
-                            )
-                          }
-                        } else {
-                          // Transient failure — fail OPEN: deliver content (with public reply if allowed)
-                          console.warn(`[webhook] ⚠️ Comment follower gate transient failure for @${senderId}; failing open`)
-                          if (replyMode !== "dm_only") {
-                            await replyToComment(user.access_token, commentId, getPublicReply())
-                          }
-                          if (replyMode !== "public_only") {
-                            await sendAutomationResponse(
-                              user.access_token,
-                              { comment_id: commentId },
-                              content,
-                              { skipTyping: true },
-                            )
-                          }
-                        }
+                      console.log(`[webhook] 📩 Comment follow-gate: sending opt-in card for rule ${match.id}`)
+                      if (replyMode !== "dm_only") {
+                        await replyToComment(user.access_token, commentId, getPublicReply())
+                      }
+                      if (replyMode !== "public_only") {
+                        await sendCardDM(
+                          user.access_token,
+                          { comment_id: commentId },
+                          buildOptInCard({
+                            ruleId: match.id,
+                            message: content.opt_in_message,
+                            buttonText: content.opt_in_button,
+                          }),
+                        )
                       }
                     } else {
                       // No follower check required — send normally
@@ -489,27 +446,17 @@ export async function POST(request: NextRequest) {
                                           const content = parseContent(match.response_content)
 
                                           if (content.check_follow === true) {
-                                            const followResult = await verifyFollowStatus(senderId, user.access_token)
-
-                                            if (followResult.follows === true) {
-                                              console.log(`[webhook] ✅ Story follower gate: @${senderId} follows @${user.username} — sending content`)
-                                              await sendAutomationResponse(user.access_token, { id: senderId }, content)
-                                            } else if (followResult.follows === false) {
-                                              console.log(`[webhook] 🔒 Story follower gate: @${senderId} doesn't follow @${user.username}`)
-                                              await sendCardDM(user.access_token, { id: senderId }, buildFollowGateCard(gateCardParams(content, user.username, match.id)))
-                                            } else {
-                                              // null → unverifiable. Distinguish auth vs transient.
-                                              const isAuthError = followResult.error === 'auth'
-                                              if (isAuthError) {
-                                                // Auth failure — fail CLOSED: send gate
-                                                console.warn(`[webhook] ⚠️ Story follower gate auth failure for @${senderId}; sending gate`)
-                                                await sendCardDM(user.access_token, { id: senderId }, buildFollowGateCard(gateCardParams(content, user.username, match.id)))
-                                              } else {
-                                                // Transient failure — fail OPEN: deliver content
-                                                console.warn(`[webhook] ⚠️ Story follower gate transient failure for @${senderId}; failing open`)
-                                                await sendAutomationResponse(user.access_token, { id: senderId }, content)
-                                              }
-                                            }
+                                            // ManyChat-style: send opt-in card first, follow check happens on button tap
+                                            console.log(`[webhook] 📩 Story follow-gate: sending opt-in card for rule ${match.id}`)
+                                            await sendCardDM(
+                                              user.access_token,
+                                              { id: senderId },
+                                              buildOptInCard({
+                                                ruleId: match.id,
+                                                message: content.opt_in_message,
+                                                buttonText: content.opt_in_button,
+                                              }),
+                                            )
                                           } else {
                                             // No follower check required — send normally
                                             await sendAutomationResponse(user.access_token, { id: senderId }, content)
@@ -600,10 +547,14 @@ export async function POST(request: NextRequest) {
                     let match = null
 
                     const isUnlockEvent = triggerType === "postback" && triggerValue.startsWith("UNLOCK_CONTENT_")
+                    const isOptInEvent = triggerType === "postback" && triggerValue.startsWith("OPT_IN_")
 
                     if (triggerType === "postback") {
                       if (isUnlockEvent) {
                         const ruleId = triggerValue.replace("UNLOCK_CONTENT_", "")
+                        match = automations.find((a) => a.id === ruleId)
+                      } else if (isOptInEvent) {
+                        const ruleId = triggerValue.replace("OPT_IN_", "")
                         match = automations.find((a) => a.id === ruleId)
                       } else if (triggerValue.startsWith("ICE_BREAKER_")) {
                         const iceBreakerId = triggerValue.replace("ICE_BREAKER_", "")

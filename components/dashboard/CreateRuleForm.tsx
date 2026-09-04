@@ -65,6 +65,8 @@ export function CreateRuleForm({ userId, triggerSource, onSuccess, editRule }: C
   const [followGateSubtitle, setFollowGateSubtitle] = useState("")
   const [followGateButton, setFollowGateButton] = useState("")
   const [followGateFollowButton, setFollowGateFollowButton] = useState("")
+  const [optInMessage, setOptInMessage] = useState("")
+  const [optInButton, setOptInButton] = useState("")
   const [delaySeconds, setDelaySeconds] = useState(0)
   const [typingIndicator, setTypingIndicator] = useState(false)
 
@@ -122,6 +124,8 @@ export function CreateRuleForm({ userId, triggerSource, onSuccess, editRule }: C
     setFollowGateSubtitle(content.follow_gate_subtitle || "")
     setFollowGateButton(content.follow_gate_button || "")
     setFollowGateFollowButton(content.follow_gate_follow_button || "")
+    setOptInMessage(content.opt_in_message || "")
+    setOptInButton(content.opt_in_button || "")
     setDelaySeconds(Number(content.delay_seconds) || 0)
     setTypingIndicator(content.typing_indicator === true)
     
@@ -207,6 +211,8 @@ export function CreateRuleForm({ userId, triggerSource, onSuccess, editRule }: C
       if (followGateSubtitle.trim()) content.follow_gate_subtitle = followGateSubtitle.trim()
       if (followGateButton.trim()) content.follow_gate_button = followGateButton.trim()
       if (followGateFollowButton.trim()) content.follow_gate_follow_button = followGateFollowButton.trim()
+      if (optInMessage.trim()) content.opt_in_message = optInMessage.trim()
+      if (optInButton.trim()) content.opt_in_button = optInButton.trim()
     }
     if (delaySeconds > 0) content.delay_seconds = delaySeconds
     if (typingIndicator) content.typing_indicator = true
@@ -698,12 +704,19 @@ export function CreateRuleForm({ userId, triggerSource, onSuccess, editRule }: C
                 <FieldLabel>Delivery options</FieldLabel>
                 <ToggleRow icon={<Lock className="w-5 h-5" />} title="Follow gate required" sub="Only followers get the payload. Non-followers get follow prompt first." on={checkFollow} onToggle={() => setCheckFollow(!checkFollow)} />
                 {checkFollow && (
-                  <div className="ml-12 space-y-3 p-4 rounded-xl border border-accent-yellow/20 bg-accent-yellow/[0.03] animate-in fade-in slide-in-from-top-1 duration-200">
-                    <FieldLabel>Customize gate card (leave blank for defaults)</FieldLabel>
-                    <TextField value={followGateTitle} onChange={setFollowGateTitle} placeholder='e.g. "🔒 Follow to Unlock"' />
-                    <TextField value={followGateSubtitle} onChange={setFollowGateSubtitle} placeholder='e.g. "Follow us and tap the button below!"' />
-                    <TextField value={followGateFollowButton} onChange={setFollowGateFollowButton} placeholder='e.g. "Follow" (profile link button)' />
-                    <TextField value={followGateButton} onChange={setFollowGateButton} placeholder='e.g. "I Followed! ✅" (confirm button)' />
+                  <div className="ml-12 space-y-4 animate-in fade-in slide-in-from-top-1 duration-200">
+                    <div className="space-y-3 p-4 rounded-xl border border-blue-500/20 bg-blue-500/[0.03]">
+                      <FieldLabel>Step 1 — Opt-in card (first message sent after comment)</FieldLabel>
+                      <TextField value={optInMessage} onChange={setOptInMessage} placeholder='Varsayılan: "Mesajını almak için butona bas 👇"' />
+                      <TextField value={optInButton} onChange={setOptInButton} placeholder='Varsayılan: "Gönder 📩"' />
+                    </div>
+                    <div className="space-y-3 p-4 rounded-xl border border-accent-yellow/20 bg-accent-yellow/[0.03]">
+                      <FieldLabel>Step 2 — Follow gate (shown if not following)</FieldLabel>
+                      <TextField value={followGateTitle} onChange={setFollowGateTitle} placeholder='Varsayılan: "Before you lose me"' />
+                      <TextField value={followGateSubtitle} onChange={setFollowGateSubtitle} placeholder='Varsayılan: "Follow @username to unlock this content!"' />
+                      <TextField value={followGateFollowButton} onChange={setFollowGateFollowButton} placeholder='Varsayılan: "Takip Et" (profil linki butonu)' />
+                      <TextField value={followGateButton} onChange={setFollowGateButton} placeholder='Varsayılan: "Takip Ettim! ✅" (onay butonu)' />
+                    </div>
                   </div>
                 )}
                 <ToggleRow icon={<Eye className="w-5 h-5" />} title="Mimic active typing status" sub="Displays typing bubble indicators to look completely organic." on={typingIndicator} onToggle={() => setTypingIndicator(!typingIndicator)} />

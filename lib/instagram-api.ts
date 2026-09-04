@@ -82,8 +82,21 @@ export function buildFollowGateCard(params: {
     title: params.title ?? "Before you lose me",
     subtitle: params.subtitle ?? `Follow @${params.username} to unlock this content!`,
     buttons: [
-      { type: "web_url", url: `https://instagram.com/${params.username}`, title: params.followButtonText ?? "Follow" },
-      { type: "postback", title: params.buttonText ?? "I Followed! ✅", payload: `UNLOCK_CONTENT_${params.ruleId}` },
+      { type: "web_url", url: `https://instagram.com/${params.username}`, title: params.followButtonText ?? "Takip Et" },
+      { type: "postback", title: params.buttonText ?? "Takip Ettim! ✅", payload: `UNLOCK_CONTENT_${params.ruleId}` },
+    ],
+  }
+}
+
+export function buildOptInCard(params: {
+  ruleId: string
+  message?: string
+  buttonText?: string
+}): IGCard {
+  return {
+    title: params.message ?? "Mesajını almak için butona bas 👇",
+    buttons: [
+      { type: "postback", title: params.buttonText ?? "Gönder 📩", payload: `OPT_IN_${params.ruleId}` },
     ],
   }
 }
