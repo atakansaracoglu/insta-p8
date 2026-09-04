@@ -137,9 +137,9 @@ export function CreateRuleForm({ userId, triggerSource, onSuccess, editRule }: C
   useEffect(() => {
     if (name || isEditing) return
     const isReplyAll = triggerSource === "comment" && keywordMode === "all"
-    if (isReplyAll) setName("Reply to every comment")
-    else if (triggers.length > 0) setName(`Reply to "${triggers[0]}"`)
-  }, [triggers, name, isEditing, triggerSource, keywordMode])
+    if (isReplyAll) setName(t("wizard.replyAllName"))
+    else if (triggers.length > 0) setName(t("wizard.replyToName").replace("{keyword}", triggers[0]))
+  }, [triggers, name, isEditing, triggerSource, keywordMode, t])
 
   const addButton = () => {
     if (buttons.length >= 3) return
@@ -239,13 +239,13 @@ export function CreateRuleForm({ userId, triggerSource, onSuccess, editRule }: C
         body: JSON.stringify(isEditing ? { ...payload, id: editRule!.id } : payload),
       })
       if (res.ok) {
-        toast.success(isEditing ? "Automation updated" : "Automation is live")
+        toast.success(isEditing ? t("wizard.updated") : t("wizard.live"))
         onSuccess()
       } else {
-        toast.error("Could not save — try again")
+        toast.error(t("wizard.saveFailed"))
       }
     } catch {
-      toast.error("Network error")
+      toast.error(t("wizard.networkError"))
     } finally {
       setSaving(false)
     }
@@ -305,9 +305,9 @@ export function CreateRuleForm({ userId, triggerSource, onSuccess, editRule }: C
               <SectionLabel>{t("form.triggerType")}</SectionLabel>
               <div className="grid grid-cols-3 gap-3">
                 {([
-                  { key: "mention" as const, icon: <AtSign className="w-5 h-5" />, label: "Mentions", desc: "Tagged in story" },
-                  { key: "reaction" as const, icon: <Heart className="w-5 h-5" />, label: "Reacts", desc: "Emoji reaction" },
-                  { key: "reply" as const, icon: <MessageSquare className="w-5 h-5" />, label: "Replies", desc: "Text reply" },
+                  { key: "mention" as const, icon: <AtSign className="w-5 h-5" />, label: t("wizard.mentions"), desc: t("wizard.mentionsDesc") },
+                  { key: "reaction" as const, icon: <Heart className="w-5 h-5" />, label: t("wizard.reacts"), desc: t("wizard.reactsDesc") },
+                  { key: "reply" as const, icon: <MessageSquare className="w-5 h-5" />, label: t("wizard.replies"), desc: t("wizard.repliesDesc") },
                 ]).map(({ key, icon, label, desc }) => (
                   <button
                     key={key}
@@ -348,7 +348,7 @@ export function CreateRuleForm({ userId, triggerSource, onSuccess, editRule }: C
               <TagInput
                 value={triggers}
                 onChange={setTriggers}
-                placeholder={triggerSource === "story" && storyTriggerType === "reaction" ? "e.g. ❤️, 🔥, 👍" : "type keyword, press Enter"}
+                placeholder={triggerSource === "story" && storyTriggerType === "reaction" ? t("wizard.emojiPlaceholder") : t("wizard.keywordPlaceholder")}
               />
               {triggerSource === "comment" && (
                 <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
@@ -362,7 +362,7 @@ export function CreateRuleForm({ userId, triggerSource, onSuccess, editRule }: C
           {triggerSource === "dm" && (
             <div className="space-y-3">
               <SectionLabel>{t("form.keyword")}</SectionLabel>
-              <TagInput value={triggers} onChange={setTriggers} placeholder="type keyword, press Enter (e.g. price)" />
+              <TagInput value={triggers} onChange={setTriggers} placeholder={t("wizard.dmKeywordPlaceholder")} />
             </div>
           )}
 
@@ -383,7 +383,7 @@ export function CreateRuleForm({ userId, triggerSource, onSuccess, editRule }: C
                 loadingReels ? (
                   <div className="p-8 flex flex-col items-center justify-center gap-3 border border-border rounded-xl">
                     <Loader2 className="w-6 h-6 animate-spin text-accent-yellow-foreground" />
-                    <span className="text-xs text-muted-foreground">Fetching Instagram feed...</span>
+                    <span className="text-xs text-muted-foreground">{t("wizard.fetchingFeed")}</span>
                   </div>
                 ) : (
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-[350px] overflow-y-auto pr-1">
@@ -406,7 +406,7 @@ export function CreateRuleForm({ userId, triggerSource, onSuccess, editRule }: C
                               <div className="w-8 h-8 rounded-full bg-accent-yellow text-black flex items-center justify-center"><Check className="w-4 h-4 stroke-[3]" /></div>
                             </div>
                           )}
-                          <p className="absolute bottom-1 inset-x-1 text-[9px] text-white line-clamp-1 pointer-events-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{reel.caption || "Untitled"}</p>
+                          <p className="absolute bottom-1 inset-x-1 text-[9px] text-white line-clamp-1 pointer-events-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{reel.caption || t("wizard.untitled")}</p>
                         </button>
                       )
                     })}
@@ -419,8 +419,8 @@ export function CreateRuleForm({ userId, triggerSource, onSuccess, editRule }: C
           {triggerSource === "comment" && keywordMode === "keyword" && triggers.length > 0 && (
             <ToggleCard
               icon={<MessageSquare className="w-5 h-5" />}
-              title="Check replies to comments"
-              description="Normally only primary post comments trigger replies"
+              title={t("wizard.checkReplies")}
+              description={t("wizard.checkRepliesDesc")}
               checked={includeReplies}
               onChange={() => setIncludeReplies(!includeReplies)}
             />
@@ -516,7 +516,7 @@ export function CreateRuleForm({ userId, triggerSource, onSuccess, editRule }: C
                   </div>
                   {buttons.map((btn) => (
                     <div key={btn.id} className="flex gap-2 items-center">
-                      <input value={btn.title} onChange={(e) => updateButton(btn.id, "title", e.target.value)} className="flex-1 h-9 bg-muted/30 border border-border rounded-lg px-3 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none" placeholder="Button label" />
+                      <input value={btn.title} onChange={(e) => updateButton(btn.id, "title", e.target.value)} className="flex-1 h-9 bg-muted/30 border border-border rounded-lg px-3 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none" placeholder={t("wizard.buttonLabel")} />
                       <input value={btn.type === "web_url" ? btn.url : btn.payload} onChange={(e) => updateButton(btn.id, btn.type === "web_url" ? "url" : "payload", e.target.value)} className="flex-1 h-9 bg-muted/30 border border-border rounded-lg px-3 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none font-mono" placeholder={btn.type === "web_url" ? "https://link" : "flow_keyword"} />
                       <button type="button" onClick={() => removeButton(btn.id)} className="text-muted-foreground hover:text-red-400 p-1"><Trash2 className="w-4 h-4" /></button>
                     </div>
@@ -529,7 +529,7 @@ export function CreateRuleForm({ userId, triggerSource, onSuccess, editRule }: C
                   <div className="grid grid-cols-3 gap-2">
                     {(["image", "video", "audio"] as const).map((m) => (
                       <button key={m} type="button" onClick={() => setMediaType(m)} className={`h-9 rounded-xl border text-xs font-bold transition-all ${mediaType === m ? "border-accent-yellow bg-accent-yellow/10 text-accent-yellow-foreground" : "border-border text-muted-foreground"}`}>
-                        {m === "image" ? "Photo" : m === "video" ? "Video" : "Audio"}
+                        {m === "image" ? t("wizard.photo") : m === "video" ? t("wizard.video") : t("wizard.audio")}
                       </button>
                     ))}
                   </div>
@@ -605,7 +605,7 @@ export function CreateRuleForm({ userId, triggerSource, onSuccess, editRule }: C
           <button type="button" onClick={handleSubmit} disabled={saving}
             className="flex items-center justify-center gap-2 h-11 px-8 rounded-full bg-accent-yellow text-black font-mono-ui text-sm font-bold hover:brightness-95 active:scale-[0.98] transition-all disabled:opacity-30 disabled:cursor-not-allowed ml-auto">
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4 stroke-[2.5]" />}
-            {saving ? t("form.saving") : isEditing ? t("form.save") : "Go Live"}
+            {saving ? t("form.saving") : isEditing ? t("form.save") : t("wizard.goLive")}
           </button>
         )}
       </div>
