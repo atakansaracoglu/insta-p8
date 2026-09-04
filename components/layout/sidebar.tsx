@@ -36,10 +36,10 @@ export function Sidebar({ className, username = "creator", profilePic, onLogout,
   return (
     <aside className={cn("flex flex-col bg-sidebar text-sidebar-foreground", className)} {...props}>
       <div className="px-5 pt-5 pb-4 flex items-center gap-3">
-        <div className="w-8 h-8 bg-accent-yellow rounded-lg flex items-center justify-center shrink-0">
-          <Zap className="w-4 h-4 text-accent-yellow-foreground" strokeWidth={2.5} />
+        <div className="flex flex-col">
+          <span className="text-[22px] font-bold tracking-tight text-sidebar-foreground leading-none">Advert<span className="text-accent-yellow">.</span></span>
+          <span className="text-[9px] tracking-[0.12em] text-sidebar-foreground/50 uppercase mt-0.5">instagram automation</span>
         </div>
-        <span className="text-[15px] font-semibold tracking-tight text-sidebar-foreground">insta-p8</span>
         <div className="ml-auto">
           <ThemeToggle />
         </div>

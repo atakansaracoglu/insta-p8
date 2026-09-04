@@ -9,7 +9,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 
 export const metadata: Metadata = {
-  title: "InstaAuto — Instagram Automation",
+  title: "Advert. — Instagram Automation",
   description: "Auto-reply to comments, DMs, and stories with keyword triggers.",
   icons: {
     icon: [
