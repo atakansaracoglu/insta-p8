@@ -49,14 +49,19 @@ async function bumpTriggerCount(supabase: any, automationId: string) {
   } catch { /* best-effort */ }
 }
 
-function gateCardParams(content: any, username: string, ruleId: string, overrides?: { title?: string; subtitle?: string }) {
+function gateCardParams(content: any, username: string, ruleId: string, overrides?: { title?: string; subtitle?: string } | "notFollowing" | "followToSee" | "verifyFailed") {
   const lang: LangCode = content.lang || "tr"
   const defaults = DEFAULT_GATE[lang] || DEFAULT_GATE.tr
+  const resolved = typeof overrides === "string"
+    ? overrides === "notFollowing" ? { title: defaults.notFollowingTitle, subtitle: defaults.notFollowingSubtitle }
+      : overrides === "followToSee" ? { title: defaults.title, subtitle: defaults.followToSee }
+      : { title: defaults.verifyFailedTitle, subtitle: defaults.verifyFailedSubtitle }
+    : overrides
   return {
     username,
     ruleId,
-    title: overrides?.title ?? content.follow_gate_title ?? defaults.title,
-    subtitle: overrides?.subtitle ?? content.follow_gate_subtitle ?? defaults.subtitle.replace("@username", `@${username}`),
+    title: resolved?.title ?? content.follow_gate_title ?? defaults.title,
+    subtitle: (resolved?.subtitle ?? content.follow_gate_subtitle ?? defaults.subtitle).replace("@username", `@${username}`),
     buttonText: content.follow_gate_button ?? defaults.confirmBtn,
     followButtonText: content.follow_gate_follow_button ?? defaults.followBtn,
   }
@@ -664,7 +669,7 @@ export async function POST(request: NextRequest) {
                         } else if (followResult.follows === false) {
                           await clearUnlockAttempts(attemptKey)
                           console.log(`[webhook] ❌ DM unlock rejected: @${senderId} still doesn't follow`)
-                          const result = await sendCardDM(user.access_token, { id: senderId }, buildFollowGateCard(gateCardParams(content, user.username, match.id, { title: "❌ Not Following Yet!", subtitle: `We couldn't verify your follow. Please follow @${user.username} and click the button again.` })))
+                          const result = await sendCardDM(user.access_token, { id: senderId }, buildFollowGateCard(gateCardParams(content, user.username, match.id, "notFollowing")))
                           if (result?.ok && conv) {
                             try {
                               await supabase.from("messages").insert({
@@ -689,7 +694,7 @@ export async function POST(request: NextRequest) {
                                                     const result = await sendTextDM(
                                                       user.access_token,
                                                       { id: senderId },
-                                                      "⚠️ We couldn't verify your follow yet. Please reach out if this keeps happening.",
+                                                      (DEFAULT_GATE[(content.lang as LangCode) || "tr"] || DEFAULT_GATE.tr).verifyUnavailable,
                                                     )
                                                     if (result?.ok && conv) {
                                                       try {
@@ -708,7 +713,7 @@ export async function POST(request: NextRequest) {
                                                     }
                                                   } else {
                                                     console.warn(`[webhook] ⚠️ DM unlock unverifiable (attempt ${attempts}/${UNLOCK_GATE_MAX_ATTEMPTS}) for @${senderId}`)
-                                                    const result = await sendCardDM(user.access_token, { id: senderId }, buildFollowGateCard(gateCardParams(content, user.username, match.id, { subtitle: `Please follow @${user.username} to see this!` })))
+                                                    const result = await sendCardDM(user.access_token, { id: senderId }, buildFollowGateCard(gateCardParams(content, user.username, match.id, "followToSee")))
                                                     if (result?.ok && conv) {
                                                       try {
                                                         await supabase.from("messages").insert({
@@ -752,7 +757,7 @@ export async function POST(request: NextRequest) {
                         } else if (followResult.follows === false) {
                           await clearUnlockAttempts(attemptKey)
                           console.log(`[webhook] 🔒 DM follower gate: @${senderId} doesn't follow @${user.username}`)
-                          const result = await sendCardDM(user.access_token, { id: senderId }, buildFollowGateCard(gateCardParams(content, user.username, match.id, { subtitle: `Please follow @${user.username} to see this!` })))
+                          const result = await sendCardDM(user.access_token, { id: senderId }, buildFollowGateCard(gateCardParams(content, user.username, match.id, "followToSee")))
                           if (result?.ok && conv) {
                             try {
                               await supabase.from("messages").insert({
@@ -775,7 +780,7 @@ export async function POST(request: NextRequest) {
                           const isAuthError = followResult.error === 'auth'
                           if (isAuthError) {
                             console.warn(`[webhook] ⚠️ DM follower gate auth failure for @${senderId}; sending gate`)
-                            const result = await sendCardDM(user.access_token, { id: senderId }, buildFollowGateCard(gateCardParams(content, user.username, match.id, { title: "❌ Verification Failed", subtitle: `We can't verify your follow status. Please follow @${user.username} and try again.` })))
+                            const result = await sendCardDM(user.access_token, { id: senderId }, buildFollowGateCard(gateCardParams(content, user.username, match.id, "verifyFailed")))
                             if (result?.ok && conv) {
                               try {
                                 await supabase.from("messages").insert({
