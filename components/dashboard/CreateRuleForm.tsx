@@ -866,7 +866,7 @@ export function CreateRuleForm({ userId, triggerSource, onSuccess, editRule }: C
                     <div className="max-w-[80%]">
                       <div className="bg-muted border border-border rounded-2xl overflow-hidden w-48 shadow-2xl">
                         <div className="p-3">
-                          <p className="text-xs font-bold text-foreground line-clamp-2">{optInMessage || "Mesajını almak için butona bas 👇"}</p>
+                          <p className="text-xs font-bold text-foreground">{optInMessage || "Mesajını almak için butona bas 👇"}</p>
                         </div>
                         <div className="border-t border-border py-2 text-center text-[10px] font-bold text-[#3797f0]">
                           {optInButton || "Gönder 📩"}
@@ -893,8 +893,8 @@ export function CreateRuleForm({ userId, triggerSource, onSuccess, editRule }: C
                     <div className="max-w-[80%]">
                       <div className="bg-muted border border-border rounded-2xl overflow-hidden w-48 shadow-2xl">
                         <div className="p-3">
-                          <p className="text-xs font-bold text-foreground line-clamp-1">{followGateTitle || "Before you lose me"}</p>
-                          <p className="text-[10px] text-muted-foreground mt-1 line-clamp-2 leading-tight">{followGateSubtitle || "Follow @username to unlock!"}</p>
+                          <p className="text-xs font-bold text-foreground">{followGateTitle || "Before you lose me"}</p>
+                          <p className="text-[10px] text-muted-foreground mt-1 leading-tight">{followGateSubtitle || "Follow @username to unlock!"}</p>
                         </div>
                         <div className="border-t border-border py-2 text-center text-[10px] font-bold text-[#3797f0]">
                           {followGateFollowButton || "Takip Et"}
