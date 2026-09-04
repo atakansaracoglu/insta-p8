@@ -31,7 +31,7 @@ export default function DashboardPage() {
     const { t } = useLang()
 
     useEffect(() => {
-        if (!userId) return
+        if (!userId) { setLoading(false); return }
         fetch(`/api/dashboard/stats?userId=${userId}`)
             .then(res => res.json())
             .then(data => { if (data && !data.error) setStats(data) })
