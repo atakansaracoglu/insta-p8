@@ -1,19 +1,16 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
 import {
   Zap, MessageCircle, Sparkles, ArrowUpRight, Github, Star,
   Send, AtSign, Brain, Inbox, Lock, Terminal,
-  Loader2,
 } from "lucide-react"
 
 const TELEGRAM_URL = "https://t.me/instagramautomationp8"
 const GITHUB_URL = "https://github.com/ayuuxh2/insta-p8"
 
-export function LandingPage() {
+export function LandingPage({ error }: { error?: string | null }) {
   const [stars, setStars] = useState<number | null>(null)
-  const router = useRouter()
 
   useEffect(() => {
     fetch("https://api.github.com/repos/ayuuxh2/insta-p8")
@@ -23,14 +20,8 @@ export function LandingPage() {
   }, [])
 
   const handleLogin = () => {
-    const scopes = "pages_show_list,pages_manage_metadata,pages_messaging,instagram_basic,instagram_manage_comments,instagram_manage_messages"
+    const scopes = "instagram_basic,instagram_manage_comments,instagram_manage_messages,pages_show_list,pages_read_engagement,business_management"
     window.location.href = `https://www.facebook.com/v24.0/dialog/oauth?client_id=${process.env.NEXT_PUBLIC_INSTAGRAM_APP_ID}&redirect_uri=${encodeURIComponent(process.env.NEXT_PUBLIC_INSTAGRAM_REDIRECT_URI || "")}&response_type=code&scope=${scopes}`
-  }
-
-  const handleTestLogin = () => {
-    localStorage.setItem("ig_user_id", "9999999999")
-    localStorage.setItem("ig_username", "test_creator")
-    router.push("/dashboard")
   }
 
   return (
@@ -69,14 +60,6 @@ export function LandingPage() {
             <span className="hidden sm:inline">Star</span>
             {stars !== null && <span className="text-[#ffe14d]">{stars}</span>}
           </a>
-          {process.env.NODE_ENV === "development" && (
-            <button
-              onClick={handleTestLogin}
-              className="font-mono-ui text-xs font-bold text-[#ffe14d] border border-[#ffe14d]/30 rounded-full px-4 py-1.5 hover:bg-[#ffe14d]/10 transition-colors"
-            >
-              Dev Login
-            </button>
-          )}
           <button
             onClick={handleLogin}
             className="font-mono-ui text-xs font-bold bg-white text-black rounded-full px-4 py-1.5 hover:bg-[#ffe14d] transition-colors"
@@ -89,6 +72,11 @@ export function LandingPage() {
       {/* Hero */}
       <main className="relative z-10">
         <section className="px-5 md:px-10 pt-16 md:pt-28 pb-16 max-w-6xl mx-auto">
+          {error && (
+            <div className="mb-6 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-mono-ui">
+              Login failed: {decodeURIComponent(error)}
+            </div>
+          )}
           <div className="fade-up" style={{ animationDelay: "0ms" }}>
             <p className="font-mono-ui text-[11px] uppercase tracking-[0.25em] text-neutral-500 mb-6">
               Instagram automation // self-hosted // no monthly fees
@@ -114,15 +102,6 @@ export function LandingPage() {
                 Connect Instagram
                 <ArrowUpRight className="w-4 h-4 group-hover:rotate-45 transition-transform" />
               </button>
-              {process.env.NODE_ENV === "development" && (
-                <button
-                  onClick={handleTestLogin}
-                  className="group flex items-center gap-2 font-mono-ui text-sm font-bold text-[#ffe14d] border border-[#ffe14d]/25 px-7 py-4 rounded-full hover:bg-[#ffe14d]/10 active:scale-[0.98] transition-all"
-                >
-                  <Terminal className="w-4 h-4" />
-                  Dev Login
-                </button>
-              )}
               <a
                 href={TELEGRAM_URL} target="_blank" rel="noreferrer"
                 className="flex items-center gap-2 font-mono-ui text-sm text-neutral-300 border border-white/15 px-6 py-4 rounded-full hover:border-[#2AABEE]/60 hover:text-[#2AABEE] transition-colors"

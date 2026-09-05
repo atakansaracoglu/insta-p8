@@ -45,15 +45,16 @@ export default function SettingsPage() {
     const clientId = process.env.NEXT_PUBLIC_INSTAGRAM_APP_ID
     const redirectUri = process.env.NEXT_PUBLIC_INSTAGRAM_REDIRECT_URI
     if (!clientId || !redirectUri) return
-    const scopes = "pages_show_list,pages_manage_metadata,pages_messaging,instagram_basic,instagram_manage_comments,instagram_manage_messages"
+    const scopes = "instagram_basic,instagram_manage_comments,instagram_manage_messages,pages_show_list,pages_read_engagement,business_management"
     window.location.href = `https://www.facebook.com/v24.0/dialog/oauth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${scopes}`
   }
 
-  const disconnectInstagram = () => {
+  const disconnectInstagram = async () => {
     localStorage.removeItem("ig_user_id")
     localStorage.removeItem("ig_username")
     localStorage.removeItem("ig_profile_pic")
-    window.location.reload()
+    await fetch("/api/auth/logout", { method: "POST" }).catch(() => {})
+    window.location.href = "/"
   }
 
   if (loading) {

@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     // Get user's access token
     const { data: user, error: userError } = await supabase
       .from("users")
-      .select("access_token, username, business_account_id")
+      .select("access_token, username, business_account_id, page_id")
       .eq("id", user_id)
       .single()
 
@@ -36,7 +36,8 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] Sending DM from", user.username, "to", recipient_id)
 
-    const sendUrl = `https://graph.facebook.com/v24.0/${user.business_account_id}/messages?access_token=${encodeURIComponent(user.access_token)}`
+    const nodeId = user.page_id || user.business_account_id
+    const sendUrl = `https://graph.facebook.com/v24.0/${nodeId}/messages?access_token=${encodeURIComponent(user.access_token)}`
 
     const response = await fetch(sendUrl, {
       method: "POST",

@@ -303,7 +303,9 @@ export async function POST(request: NextRequest) {
 
       console.log(`[webhook] USER_RESOLVED: OK user=${user.id} username=@${user.username} webhookId=${webhookId}`)
 
-      const igId = String(user.business_account_id)
+      // Use "me" — the page access token resolves to the correct page.
+      // Using business_account_id here is wrong; the /messages endpoint belongs to the Page node.
+      const igId = user.page_id ? String(user.page_id) : "me"
 
       const { data: automations } = await supabase
         .from("automations")
