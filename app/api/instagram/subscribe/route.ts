@@ -35,7 +35,8 @@ export async function POST() {
   ])
 
   if (!instagram.ok && !page.ok) {
-    console.error(`[subscribe] Both subscriptions failed for user ${userId}: IG=${instagram.status} Page=${page.status}`)
+    const [instagramError, pageError] = await Promise.all([instagram.text(), page.text()])
+    console.error(`[subscribe] Both subscriptions failed for user ${userId}: IG=${instagram.status} ${instagramError} Page=${page.status} ${pageError}`)
     return NextResponse.json({ error: "Webhook subscription failed" }, { status: 502 })
   }
 
