@@ -29,17 +29,13 @@ export async function POST() {
       body: JSON.stringify({ access_token: user.access_token, subscribed_fields }),
     })
 
-  const [instagram, page] = await Promise.all([
-    post(String(user.business_account_id), ["comments", "messages", "message_reactions", "message_edit", "live_comments"]),
-    post(String(user.page_id), ["feed", "messages", "messaging_postbacks"]),
-  ])
+  const instagram = await post(String(user.business_account_id), ["comments", "messages", "message_reactions", "message_edit", "live_comments"])
 
-  if (!instagram.ok && !page.ok) {
-    const [instagramError, pageError] = await Promise.all([instagram.text(), page.text()])
-    console.error(`[subscribe] Both subscriptions failed for user ${userId}: IG=${instagram.status} ${instagramError} Page=${page.status} ${pageError}`)
+  if (!instagram.ok) {
+    console.error(`[subscribe] Instagram subscription failed for user ${userId}: ${instagram.status} ${await instagram.text()}`)
     return NextResponse.json({ error: "Webhook subscription failed" }, { status: 502 })
   }
 
-  console.log(`[subscribe] Webhook subscription refreshed for user ${userId}: IG=${instagram.status} Page=${page.status}`)
+  console.log(`[subscribe] Instagram webhook subscription refreshed for user ${userId}: ${instagram.status}`)
   return NextResponse.json({ ok: true })
 }
