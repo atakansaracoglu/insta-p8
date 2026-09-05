@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS public.users (
   username TEXT UNIQUE NOT NULL,
   access_token TEXT NOT NULL,
   token_expires_at TIMESTAMPTZ,
-  business_account_id BIGINT,
+  business_account_id TEXT,
   page_id TEXT,
   groq_auto_reply_enabled BOOLEAN DEFAULT FALSE,
   groq_api_key TEXT DEFAULT NULL,

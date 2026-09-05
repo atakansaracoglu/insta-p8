@@ -311,9 +311,9 @@ export async function POST(request: NextRequest) {
 
       console.log(`[webhook] USER_RESOLVED: OK user=${user.id} username=@${user.username} webhookId=${webhookId}`)
 
-      // Instagram Messaging API requires the IG Business Account ID, not the Page ID.
-      // "me" with a Page token resolves to the Page node, which is wrong for IG messaging.
-      const igId = user.business_account_id ? String(user.business_account_id) : "me"
+      // Use webhookId (entry.id, a string) instead of user.business_account_id (a JS number
+      // that loses precision for IDs > Number.MAX_SAFE_INTEGER — e.g. ...633 becomes ...632).
+      const igId = webhookId || (user.business_account_id ? String(user.business_account_id) : "me")
 
       const { data: automations } = await supabase
         .from("automations")
