@@ -2,13 +2,13 @@ export default function PrivacyPage() {
   return (
     <div className="max-w-2xl mx-auto py-12 px-4">
       <h1 className="text-3xl font-bold mb-6">Privacy Policy</h1>
-      <p className="text-sm text-muted-foreground mb-8">Last updated: July 2026</p>
+      <p className="text-sm text-muted-foreground mb-8">Last updated: September 2026</p>
 
       <section className="space-y-4">
         <p>
-          This app (&quot;Insta P8&quot;) is owned and operated by <strong>ayuuxh labs</strong>. The app uses the Instagram Graph API to help users manage
-          their Instagram account, including posting reels, auto-replying to
-          messages, and viewing analytics.
+          This app (&quot;DM AutoBot&quot;) is owned and operated by <strong>Atakan Saracoglu</strong>. The app uses the Instagram Graph API to help users manage
+          their Instagram account, including auto-replying to
+          messages and comments, and viewing analytics.
         </p>
 
         <h2 className="text-xl font-semibold mt-6">Data We Collect</h2>
@@ -35,7 +35,14 @@ export default function PrivacyPage() {
 
         <h2 className="text-xl font-semibold mt-6">Contact</h2>
         <p>
-          For any questions, please reach out via the app dashboard or email at flexhunt1@gmail.com.
+          For any questions, please reach out via the app dashboard or email at atakansaracoglu1@gmail.com.
+        </p>
+
+        <h2 className="text-xl font-semibold mt-6">Data Deletion</h2>
+        <p>
+          You can request deletion of your data at any time by disconnecting your Instagram account
+          from the dashboard settings page or by contacting us at atakansaracoglu1@gmail.com.
+          Upon disconnection, all stored access tokens and profile data will be removed.
         </p>
       </section>
     </div>
