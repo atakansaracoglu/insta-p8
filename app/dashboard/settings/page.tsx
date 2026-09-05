@@ -45,7 +45,8 @@ export default function SettingsPage() {
     const clientId = process.env.NEXT_PUBLIC_INSTAGRAM_APP_ID
     const redirectUri = process.env.NEXT_PUBLIC_INSTAGRAM_REDIRECT_URI
     if (!clientId || !redirectUri) return
-    window.location.href = `https://www.instagram.com/oauth/authorize?enable_fb_login=0&force_authentication=1&client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=instagram_business_basic%2Cinstagram_business_manage_messages%2Cinstagram_business_manage_comments`
+    const scopes = "pages_show_list,pages_manage_metadata,pages_messaging,instagram_basic,instagram_manage_comments,instagram_manage_messages"
+    window.location.href = `https://www.facebook.com/v24.0/dialog/oauth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${scopes}`
   }
 
   const disconnectInstagram = () => {

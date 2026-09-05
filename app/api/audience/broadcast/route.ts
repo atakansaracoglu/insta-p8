@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
     if (!(await verifySession(userId))) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
     const supabase = await getSupabaseServerClient()
-    const { data: user } = await supabase.from("users").select("access_token").eq("id", userId).single()
+    const { data: user } = await supabase.from("users").select("access_token, business_account_id").eq("id", userId).single()
     if (!user?.access_token) return NextResponse.json({ error: "User not found" }, { status: 404 })
 
     let sent = 0
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     // ponytail: sequential sends with 1s delay to respect IG rate limits; batch queue when scale matters
     for (const rid of recipientIds.slice(0, 100)) {
       try {
-        const res = await fetch(`https://graph.instagram.com/v24.0/me/messages?access_token=${user.access_token}`, {
+        const res = await fetch(`https://graph.facebook.com/v24.0/${user.business_account_id}/messages?access_token=${user.access_token}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ recipient: { id: rid }, message: { text: message } }),

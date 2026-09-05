@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
             // We need to know which response to send. 
 
             const response = await fetch(
-                `https://graph.instagram.com/v21.0/me/messenger_profile?access_token=${user.access_token}`,
+                `https://graph.facebook.com/v24.0/${user.page_id}/messenger_profile?access_token=${user.access_token}`,
                 {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },

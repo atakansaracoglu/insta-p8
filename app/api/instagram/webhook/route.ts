@@ -122,6 +122,7 @@ function keywordMatches(triggerValue: string, text: string): boolean {
 // ============================================================
 async function sendAutomationResponse(
   token: string,
+  igId: string,
   recipient: { id?: string; comment_id?: string },
   content: any,
   opts: { skipTyping?: boolean } = {},
@@ -129,7 +130,7 @@ async function sendAutomationResponse(
   const delaySeconds = Number(content.delay_seconds) || 0
   const useTyping = content.typing_indicator === true && recipient.id && !opts.skipTyping
 
-  if (useTyping) await sendSenderAction(token, recipient.id!, "typing_on")
+  if (useTyping) await sendSenderAction(token, igId, recipient.id!, "typing_on")
   if (delaySeconds > 0) await sleep(delaySeconds * 1000)
 
   const quickReplies = Array.isArray(content.quick_replies)
@@ -140,19 +141,19 @@ async function sendAutomationResponse(
 
   let result
   if (content.media?.url) {
-    result = await sendMediaDM(token, recipient, content.media.type || "image", content.media.url)
+    result = await sendMediaDM(token, igId, recipient, content.media.type || "image", content.media.url)
     if (result.ok && content.message) {
-      result = await sendTextDM(token, recipient, content.message, quickReplies)
+      result = await sendTextDM(token, igId, recipient, content.message, quickReplies)
     }
   } else if (content.card) {
-    result = await sendCardDM(token, recipient, content.card)
+    result = await sendCardDM(token, igId, recipient, content.card)
   } else if (content.message) {
-    result = await sendTextDM(token, recipient, content.message, quickReplies)
+    result = await sendTextDM(token, igId, recipient, content.message, quickReplies)
   } else {
     result = { ok: false, error: "empty content" }
   }
 
-  if (useTyping) await sendSenderAction(token, recipient.id!, "typing_off")
+  if (useTyping) await sendSenderAction(token, igId, recipient.id!, "typing_off")
   return result
 }
 
@@ -174,7 +175,7 @@ function responsePreviewText(content: any): string {
 // ============================================================
 async function verifyFollowStatus(igScopedId: string, pageAccessToken: string): Promise<{ follows: boolean | null; error?: 'auth' | 'transient' }> {
   try {
-    const url = `https://graph.instagram.com/v21.0/${igScopedId}?fields=is_user_follow_business&access_token=${pageAccessToken}`
+    const url = `https://graph.facebook.com/v24.0/${igScopedId}?fields=is_user_follow_business&access_token=${pageAccessToken}`
     // 5s timeout -- Graph API is fast, anything longer means trouble
     const response = await fetch(url, { signal: AbortSignal.timeout(5000) })
     if (!response.ok) {
@@ -301,6 +302,8 @@ export async function POST(request: NextRequest) {
       }
 
       console.log(`[webhook] USER_RESOLVED: OK user=${user.id} username=@${user.username} webhookId=${webhookId}`)
+
+      const igId = String(user.business_account_id)
 
       const { data: automations } = await supabase
         .from("automations")
@@ -430,6 +433,7 @@ export async function POST(request: NextRequest) {
                         const optInDefaults = DEFAULT_OPT_IN[ruleLang] || DEFAULT_OPT_IN.tr
                         const cardResult = await sendCardDM(
                           user.access_token,
+                          igId,
                           { comment_id: commentId },
                           buildOptInCard({
                             ruleId: match.id,
@@ -447,6 +451,7 @@ export async function POST(request: NextRequest) {
                           console.log(`[webhook] COMMENT_DM_OPTIN_FALLBACK: retrying as text-only for new user @${senderUsername}`)
                           const textResult = await sendTextDM(
                             user.access_token,
+                            igId,
                             { comment_id: commentId },
                             fallbackText,
                           )
@@ -462,6 +467,7 @@ export async function POST(request: NextRequest) {
                       if (replyMode !== "public_only") {
                         const dmResult = await sendAutomationResponse(
                           user.access_token,
+                          igId,
                           { comment_id: commentId },
                           content,
                           { skipTyping: true },
@@ -474,6 +480,7 @@ export async function POST(request: NextRequest) {
                           console.log(`[webhook] COMMENT_DM_FALLBACK: retrying as text-only for new user @${senderUsername}`)
                           const textResult = await sendTextDM(
                             user.access_token,
+                            igId,
                             { comment_id: commentId },
                             content.message,
                           )
@@ -547,6 +554,7 @@ export async function POST(request: NextRequest) {
                                             const storyOptIn = DEFAULT_OPT_IN[storyLang] || DEFAULT_OPT_IN.tr
                                             await sendCardDM(
                                               user.access_token,
+                                              igId,
                                               { id: senderId },
                                               buildOptInCard({
                                                 ruleId: match.id,
@@ -556,7 +564,7 @@ export async function POST(request: NextRequest) {
                                             )
                                           } else {
                                             // No follower check required — send normally
-                                            await sendAutomationResponse(user.access_token, { id: senderId }, content)
+                                            await sendAutomationResponse(user.access_token, igId, { id: senderId }, content)
                                           }
                                         }
         }
@@ -683,12 +691,12 @@ export async function POST(request: NextRequest) {
                       // AI fallback: if no keyword rule matched, try AI auto-reply
                       if (user.groq_auto_reply_enabled && triggerType !== "postback") {
                         console.log(`[webhook] 🤖 No rule match — trying AI auto-reply for DM from ${senderId}`)
-                        await sendSenderAction(user.access_token, senderId, "mark_seen")
+                        await sendSenderAction(user.access_token, igId, senderId, "mark_seen")
                         const aiReply = await generateAIReply(triggerValue, user.ai_context || "", user.groq_api_key, user.ai_base_url, user.ai_model)
                         if (aiReply) {
-                          await sendSenderAction(user.access_token, senderId, "typing_on")
+                          await sendSenderAction(user.access_token, igId, senderId, "typing_on")
                           await sleep(1200)
-                          const result = await sendTextDM(user.access_token, { id: senderId }, aiReply)
+                          const result = await sendTextDM(user.access_token, igId, { id: senderId }, aiReply)
                           if (result?.ok && conv) {
                             try {
                               await supabase.from("messages").insert({
@@ -717,7 +725,7 @@ export async function POST(request: NextRequest) {
 
                     // Mark message as seen for human-like flow
                     if (content.mark_seen !== false) {
-                      await sendSenderAction(user.access_token, senderId, "mark_seen")
+                      await sendSenderAction(user.access_token, igId, senderId, "mark_seen")
                     }
 
                     // ---------- Follow gate for DMs ----------
@@ -733,7 +741,7 @@ export async function POST(request: NextRequest) {
                         if (followResult.follows === true) {
                           await clearUnlockAttempts(attemptKey)
                           console.log(`[webhook] ✅ DM unlock verified for @${senderId}`)
-                          const result = await sendAutomationResponse(user.access_token, { id: senderId }, content)
+                          const result = await sendAutomationResponse(user.access_token, igId, { id: senderId }, content)
                           if (result?.ok && conv) {
                             try {
                               await supabase.from("messages").insert({
@@ -752,7 +760,7 @@ export async function POST(request: NextRequest) {
                         } else if (followResult.follows === false) {
                           await clearUnlockAttempts(attemptKey)
                           console.log(`[webhook] ❌ DM unlock rejected: @${senderId} still doesn't follow`)
-                          const result = await sendCardDM(user.access_token, { id: senderId }, buildFollowGateCard(gateCardParams(content, user.username, match.id, "notFollowing")))
+                          const result = await sendCardDM(user.access_token, igId, { id: senderId }, buildFollowGateCard(gateCardParams(content, user.username, match.id, "notFollowing")))
                           if (result?.ok && conv) {
                             try {
                               await supabase.from("messages").insert({
@@ -776,6 +784,7 @@ export async function POST(request: NextRequest) {
                                                     console.warn(`[webhook] ⚠️ DM unlock gate capped after ${attempts} unverifiable attempts for @${senderId} / rule ${match.id}`)
                                                     const result = await sendTextDM(
                                                       user.access_token,
+                                                      igId,
                                                       { id: senderId },
                                                       (DEFAULT_GATE[(content.lang as LangCode) || "tr"] || DEFAULT_GATE.tr).verifyUnavailable,
                                                     )
@@ -796,7 +805,7 @@ export async function POST(request: NextRequest) {
                                                     }
                                                   } else {
                                                     console.warn(`[webhook] ⚠️ DM unlock unverifiable (attempt ${attempts}/${UNLOCK_GATE_MAX_ATTEMPTS}) for @${senderId}`)
-                                                    const result = await sendCardDM(user.access_token, { id: senderId }, buildFollowGateCard(gateCardParams(content, user.username, match.id, "followToSee")))
+                                                    const result = await sendCardDM(user.access_token, igId, { id: senderId }, buildFollowGateCard(gateCardParams(content, user.username, match.id, "followToSee")))
                                                     if (result?.ok && conv) {
                                                       try {
                                                         await supabase.from("messages").insert({
@@ -821,7 +830,7 @@ export async function POST(request: NextRequest) {
                                                 if (followResult.follows === true) {
                           await clearUnlockAttempts(attemptKey)
                           console.log(`[webhook] ✅ DM follower gate: @${senderId} follows @${user.username} — sending content`)
-                          const result = await sendAutomationResponse(user.access_token, { id: senderId }, content)
+                          const result = await sendAutomationResponse(user.access_token, igId, { id: senderId }, content)
                           if (result?.ok && conv) {
                             try {
                               await supabase.from("messages").insert({
@@ -840,7 +849,7 @@ export async function POST(request: NextRequest) {
                         } else if (followResult.follows === false) {
                           await clearUnlockAttempts(attemptKey)
                           console.log(`[webhook] 🔒 DM follower gate: @${senderId} doesn't follow @${user.username}`)
-                          const result = await sendCardDM(user.access_token, { id: senderId }, buildFollowGateCard(gateCardParams(content, user.username, match.id, "followToSee")))
+                          const result = await sendCardDM(user.access_token, igId, { id: senderId }, buildFollowGateCard(gateCardParams(content, user.username, match.id, "followToSee")))
                           if (result?.ok && conv) {
                             try {
                               await supabase.from("messages").insert({
@@ -863,7 +872,7 @@ export async function POST(request: NextRequest) {
                           const isAuthError = followResult.error === 'auth'
                           if (isAuthError) {
                             console.warn(`[webhook] ⚠️ DM follower gate auth failure for @${senderId}; sending gate`)
-                            const result = await sendCardDM(user.access_token, { id: senderId }, buildFollowGateCard(gateCardParams(content, user.username, match.id, "verifyFailed")))
+                            const result = await sendCardDM(user.access_token, igId, { id: senderId }, buildFollowGateCard(gateCardParams(content, user.username, match.id, "verifyFailed")))
                             if (result?.ok && conv) {
                               try {
                                 await supabase.from("messages").insert({
@@ -882,7 +891,7 @@ export async function POST(request: NextRequest) {
                           } else {
                             // Transient failure — fail OPEN on initial trigger
                             console.warn(`[webhook] ⚠️ DM follower gate transient failure for @${senderId}; failing open on initial trigger`)
-                            const result = await sendAutomationResponse(user.access_token, { id: senderId }, content)
+                            const result = await sendAutomationResponse(user.access_token, igId, { id: senderId }, content)
                             if (result?.ok && conv) {
                               try {
                                 await supabase.from("messages").insert({
@@ -903,7 +912,7 @@ export async function POST(request: NextRequest) {
                       }
                     } else {
                       // No follower check required
-                      const result = await sendAutomationResponse(user.access_token, { id: senderId }, content)
+                      const result = await sendAutomationResponse(user.access_token, igId, { id: senderId }, content)
                       if (result?.ok && conv) {
                         try {
                           await supabase.from("messages").insert({

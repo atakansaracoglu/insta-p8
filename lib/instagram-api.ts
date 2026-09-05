@@ -1,4 +1,4 @@
-const GRAPH = "https://graph.instagram.com/v24.0"
+const GRAPH = "https://graph.facebook.com/v24.0"
 
 export interface IGButton {
   type: "web_url" | "postback"
@@ -76,12 +76,6 @@ export function buildCardAttachment(card: IGCard) {
   }
 }
 
-/**
- * Build the follower-gate card shown to non-followers. Centralized so the
- * comment, story, and DM branches all share the same copy and the same
- * `as const` button types — preserving the `"web_url"` / `"postback"`
- * literal types that `IGButton` requires.
- */
 export function buildFollowGateCard(params: {
   username: string
   ruleId: string
@@ -115,6 +109,7 @@ export function buildOptInCard(params: {
 
 export async function sendTextDM(
   token: string,
+  igId: string,
   recipient: { id?: string; comment_id?: string },
   text: string,
   quickReplies?: QuickReply[],
@@ -127,24 +122,26 @@ export async function sendTextDM(
       payload: q.payload,
     }))
   }
-  return post("me/messages", token, { recipient, message })
+  return post(`${igId}/messages`, token, { recipient, message })
 }
 
 export async function sendCardDM(
   token: string,
+  igId: string,
   recipient: { id?: string; comment_id?: string },
   card: IGCard,
 ): Promise<SendResult> {
-  return post("me/messages", token, { recipient, message: buildCardAttachment(card) })
+  return post(`${igId}/messages`, token, { recipient, message: buildCardAttachment(card) })
 }
 
 export async function sendMediaDM(
   token: string,
+  igId: string,
   recipient: { id?: string; comment_id?: string },
   mediaType: "image" | "video" | "audio",
   url: string,
 ): Promise<SendResult> {
-  return post("me/messages", token, {
+  return post(`${igId}/messages`, token, {
     recipient,
     message: { attachment: { type: mediaType, payload: { url } } },
   })
@@ -152,19 +149,21 @@ export async function sendMediaDM(
 
 export async function sendSenderAction(
   token: string,
+  igId: string,
   recipientId: string,
   action: "typing_on" | "typing_off" | "mark_seen",
 ): Promise<SendResult> {
-  return post("me/messages", token, { recipient: { id: recipientId }, sender_action: action })
+  return post(`${igId}/messages`, token, { recipient: { id: recipientId }, sender_action: action })
 }
 
 export async function sendMessageReaction(
   token: string,
+  igId: string,
   recipientId: string,
   messageId: string,
   reaction = "love",
 ): Promise<SendResult> {
-  return post("me/messages", token, {
+  return post(`${igId}/messages`, token, {
     recipient: { id: recipientId },
     sender_action: "react",
     payload: { message_id: messageId, reaction },
