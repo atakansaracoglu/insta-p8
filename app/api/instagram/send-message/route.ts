@@ -36,8 +36,7 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] Sending DM from", user.username, "to", recipient_id)
 
-    const nodeId = user.page_id || user.business_account_id
-    const sendUrl = `https://graph.facebook.com/v24.0/${nodeId}/messages?access_token=${encodeURIComponent(user.access_token)}`
+    const sendUrl = `https://graph.facebook.com/v24.0/me/messages?access_token=${encodeURIComponent(user.access_token)}`
 
     const response = await fetch(sendUrl, {
       method: "POST",

@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
 
         // 3. Send to Instagram
         const res = await fetch(
-            `https://graph.facebook.com/v24.0/${user.page_id || user.business_account_id}/messages?access_token=${user.access_token}`,
+            `https://graph.facebook.com/v24.0/me/messages?access_token=${user.access_token}`,
             {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },

@@ -67,6 +67,13 @@ function gateCardParams(content: any, username: string, ruleId: string, override
   }
 }
 
+function sendFollowGate(token: string, igId: string, recipient: { id?: string; comment_id?: string }, params: ReturnType<typeof gateCardParams>) {
+  const text = `${params.title}\n${params.subtitle}\n\nhttps://instagram.com/${params.username}`
+  return sendTextDM(token, igId, recipient, text, [
+    { title: (params.buttonText || "Takip Ettim! ✅").slice(0, 20), payload: `UNLOCK_CONTENT_${params.ruleId}` },
+  ])
+}
+
 // Max times we'll send the gate card for an unverifiable follow status on a single unlock event.
 // After this, we send a single "couldn't verify your follow" message and stop spamming the user.
 const UNLOCK_GATE_MAX_ATTEMPTS = 3
@@ -306,7 +313,7 @@ export async function POST(request: NextRequest) {
 
       // Use "me" — the page access token resolves to the correct page.
       // Using business_account_id here is wrong; the /messages endpoint belongs to the Page node.
-      const igId = user.page_id ? String(user.page_id) : "me"
+      const igId = "me"
 
       const { data: automations } = await supabase
         .from("automations")
@@ -434,29 +441,24 @@ export async function POST(request: NextRequest) {
                       }
                       if (replyMode !== "public_only") {
                         const optInDefaults = DEFAULT_OPT_IN[ruleLang] || DEFAULT_OPT_IN.tr
-                        const cardResult = await sendCardDM(
+                        const optInText = content.opt_in_message || optInDefaults.message
+                        const optInButton = content.opt_in_button || optInDefaults.button
+                        const optInResult = await sendTextDM(
                           user.access_token,
                           igId,
                           { comment_id: commentId },
-                          buildOptInCard({
-                            ruleId: match.id,
-                            message: content.opt_in_message || optInDefaults.message,
-                            buttonText: content.opt_in_button || optInDefaults.button,
-                          }),
+                          optInText,
+                          [{ title: optInButton.slice(0, 20), payload: `OPT_IN_${match.id}` }],
                         )
-                        console.log(`[webhook] COMMENT_DM_OPTIN: ok=${cardResult.ok} isNewUser=${isNewUser}${cardResult.error ? ` error=${JSON.stringify(cardResult.error)}` : ""}`)
+                        console.log(`[webhook] COMMENT_DM_OPTIN: ok=${optInResult.ok} isNewUser=${isNewUser}${optInResult.error ? ` error=${JSON.stringify(optInResult.error)}` : ""}`)
 
-                        // Fallback: if template-based private reply failed, try text-only
-                        // Instagram Private Reply API may reject templates for users with no
-                        // prior conversation. Text-only private replies have broader support.
-                        if (!cardResult.ok && isNewUser) {
-                          const fallbackText = content.opt_in_message || optInDefaults.message
-                          console.log(`[webhook] COMMENT_DM_OPTIN_FALLBACK: retrying as text-only for new user @${senderUsername}`)
+                        if (!optInResult.ok && isNewUser) {
+                          console.log(`[webhook] COMMENT_DM_OPTIN_FALLBACK: retrying without quick_reply for new user @${senderUsername}`)
                           const textResult = await sendTextDM(
                             user.access_token,
                             igId,
                             { comment_id: commentId },
-                            fallbackText,
+                            optInText,
                           )
                           console.log(`[webhook] COMMENT_DM_OPTIN_FALLBACK_RESULT: ok=${textResult.ok}${textResult.error ? ` error=${JSON.stringify(textResult.error)}` : ""}`)
                         }
@@ -589,12 +591,20 @@ export async function POST(request: NextRequest) {
           if (event.message?.quick_reply?.payload) {
             triggerType = "postback"
             triggerValue = event.message.quick_reply.payload
-          } else if (event.message?.text) {
-            triggerType = "keyword"
-            triggerValue = event.message.text.toLowerCase().trim()
           } else if (event.postback?.payload) {
             triggerType = "postback"
             triggerValue = event.postback.payload
+          } else if (event.message?.text) {
+            const txt = event.message.text.trim()
+            if (txt.startsWith("inline_button_id:")) {
+              // Instagram sends template button presses as text — treat as opt-in confirmation
+              // by finding the most recent active automation for this sender
+              triggerType = "inline_button"
+              triggerValue = txt
+            } else {
+              triggerType = "keyword"
+              triggerValue = txt.toLowerCase()
+            }
           } else {
             continue
           }
@@ -654,40 +664,54 @@ export async function POST(request: NextRequest) {
                     const dmAutomations = automations.filter((a: any) => a.trigger_source === "dm" || !a.trigger_source)
                     let match = null
 
+                    if (triggerType === "inline_button") {
+                      // Instagram template button press — find the most recent follow-gated automation
+                      match = automations.find((a: any) => {
+                        const c = typeof a.response_content === "string" ? JSON.parse(a.response_content) : a.response_content
+                        return c?.check_follow === true
+                      })
+                      if (match) {
+                        triggerType = "postback"
+                        triggerValue = `OPT_IN_${match.id}`
+                      }
+                      console.log(`[webhook] inline_button mapped to ${match ? match.name : "no match"}`)
+                    }
+
                     const isUnlockEvent = triggerType === "postback" && triggerValue.startsWith("UNLOCK_CONTENT_")
                     const isOptInEvent = triggerType === "postback" && triggerValue.startsWith("OPT_IN_")
 
-                    if (triggerType === "postback") {
-                      if (isUnlockEvent) {
-                        const ruleId = triggerValue.replace("UNLOCK_CONTENT_", "")
-                        match = automations.find((a) => a.id === ruleId)
-                      } else if (isOptInEvent) {
-                        const ruleId = triggerValue.replace("OPT_IN_", "")
-                        match = automations.find((a) => a.id === ruleId)
-                      } else if (triggerValue.startsWith("ICE_BREAKER_")) {
-                        const iceBreakerId = triggerValue.replace("ICE_BREAKER_", "")
-                        const { data: ib } = await supabase
-                          .from("ice_breakers")
-                          .select("*")
-                          .eq("id", iceBreakerId)
-                          .eq("user_id", user.id)
-                          .single()
-                        if (ib) {
-                          match = { name: "Ice Breaker: " + ib.question, response_content: { message: ib.response } }
+                    if (!match) {
+                      if (triggerType === "postback") {
+                        if (isUnlockEvent) {
+                          const ruleId = triggerValue.replace("UNLOCK_CONTENT_", "")
+                          match = automations.find((a) => a.id === ruleId)
+                        } else if (isOptInEvent) {
+                          const ruleId = triggerValue.replace("OPT_IN_", "")
+                          match = automations.find((a) => a.id === ruleId)
+                        } else if (triggerValue.startsWith("ICE_BREAKER_")) {
+                          const iceBreakerId = triggerValue.replace("ICE_BREAKER_", "")
+                          const { data: ib } = await supabase
+                            .from("ice_breakers")
+                            .select("*")
+                            .eq("id", iceBreakerId)
+                            .eq("user_id", user.id)
+                            .single()
+                          if (ib) {
+                            match = { name: "Ice Breaker: " + ib.question, response_content: { message: ib.response } }
+                          }
+                        } else {
+                          match = automations.find((a) => a.trigger_type === "postback" && a.trigger_value === triggerValue)
+                          if (!match) {
+                            match = dmAutomations.find(
+                              (a) => a.trigger_type === "keyword" && keywordMatches(a.trigger_value, triggerValue.toLowerCase()),
+                            )
+                          }
                         }
                       } else {
-                        match = automations.find((a) => a.trigger_type === "postback" && a.trigger_value === triggerValue)
-                        // Quick reply payloads can also match keyword rules
-                        if (!match) {
-                          match = dmAutomations.find(
-                            (a) => a.trigger_type === "keyword" && keywordMatches(a.trigger_value, triggerValue.toLowerCase()),
-                          )
-                        }
+                        match = dmAutomations.find(
+                          (a) => a.trigger_type === "keyword" && keywordMatches(a.trigger_value, triggerValue),
+                        )
                       }
-                    } else {
-                      match = dmAutomations.find(
-                        (a) => a.trigger_type === "keyword" && keywordMatches(a.trigger_value, triggerValue),
-                      )
                     }
 
                     if (!match) {
@@ -763,7 +787,7 @@ export async function POST(request: NextRequest) {
                         } else if (followResult.follows === false) {
                           await clearUnlockAttempts(attemptKey)
                           console.log(`[webhook] ❌ DM unlock rejected: @${senderId} still doesn't follow`)
-                          const result = await sendCardDM(user.access_token, igId, { id: senderId }, buildFollowGateCard(gateCardParams(content, user.username, match.id, "notFollowing")))
+                          const result = await sendFollowGate(user.access_token, igId, { id: senderId }, gateCardParams(content, user.username, match.id, "notFollowing"))
                           if (result?.ok && conv) {
                             try {
                               await supabase.from("messages").insert({
@@ -808,7 +832,7 @@ export async function POST(request: NextRequest) {
                                                     }
                                                   } else {
                                                     console.warn(`[webhook] ⚠️ DM unlock unverifiable (attempt ${attempts}/${UNLOCK_GATE_MAX_ATTEMPTS}) for @${senderId}`)
-                                                    const result = await sendCardDM(user.access_token, igId, { id: senderId }, buildFollowGateCard(gateCardParams(content, user.username, match.id, "followToSee")))
+                                                    const result = await sendFollowGate(user.access_token, igId, { id: senderId }, gateCardParams(content, user.username, match.id, "followToSee"))
                                                     if (result?.ok && conv) {
                                                       try {
                                                         await supabase.from("messages").insert({
@@ -852,7 +876,7 @@ export async function POST(request: NextRequest) {
                         } else if (followResult.follows === false) {
                           await clearUnlockAttempts(attemptKey)
                           console.log(`[webhook] 🔒 DM follower gate: @${senderId} doesn't follow @${user.username}`)
-                          const result = await sendCardDM(user.access_token, igId, { id: senderId }, buildFollowGateCard(gateCardParams(content, user.username, match.id, "followToSee")))
+                          const result = await sendFollowGate(user.access_token, igId, { id: senderId }, gateCardParams(content, user.username, match.id, "followToSee"))
                           if (result?.ok && conv) {
                             try {
                               await supabase.from("messages").insert({
@@ -875,7 +899,7 @@ export async function POST(request: NextRequest) {
                           const isAuthError = followResult.error === 'auth'
                           if (isAuthError) {
                             console.warn(`[webhook] ⚠️ DM follower gate auth failure for @${senderId}; sending gate`)
-                            const result = await sendCardDM(user.access_token, igId, { id: senderId }, buildFollowGateCard(gateCardParams(content, user.username, match.id, "verifyFailed")))
+                            const result = await sendFollowGate(user.access_token, igId, { id: senderId }, gateCardParams(content, user.username, match.id, "verifyFailed"))
                             if (result?.ok && conv) {
                               try {
                                 await supabase.from("messages").insert({
