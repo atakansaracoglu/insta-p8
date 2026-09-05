@@ -304,6 +304,11 @@ const tr: Dict = {
   "settings.registrationDesc": "Yeni kullanıcıların kayıt olmasına izin ver veya kapat.",
   "settings.registrationOpen": "Kayıtlar Açık",
   "settings.registrationClosed": "Kayıtlar Kapalı",
+  "settings.instagram": "Instagram Hesabı",
+  "settings.instagramDesc": "Otomasyonların çalışması için Instagram hesabınızı bağlayın.",
+  "settings.instagramConnect": "Instagram Bağla",
+  "settings.instagramConnected": "Bağlı",
+  "settings.instagramDisconnect": "Bağlantıyı Kes",
 
   // Common
   "common.loading": "Yükleniyor...",
@@ -579,6 +584,11 @@ const en: Dict = {
   "settings.registrationDesc": "Allow or block new user signups.",
   "settings.registrationOpen": "Registration Open",
   "settings.registrationClosed": "Registration Closed",
+  "settings.instagram": "Instagram Account",
+  "settings.instagramDesc": "Connect your Instagram account for automations to work.",
+  "settings.instagramConnect": "Connect Instagram",
+  "settings.instagramConnected": "Connected",
+  "settings.instagramDisconnect": "Disconnect",
 
   "common.loading": "Loading...",
   "common.error": "Something went wrong.",

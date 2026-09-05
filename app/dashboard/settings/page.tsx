@@ -1,11 +1,13 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Shield, Users, Loader2 } from "lucide-react"
+import { Shield, Users, Loader2, Instagram } from "lucide-react"
 import { useLang } from "@/components/lang-provider"
+import { useInstagramSession } from "@/hooks/use-instagram-session"
 
 export default function SettingsPage() {
   const { t } = useLang()
+  const { username, userId } = useInstagramSession()
   const [isAdmin, setIsAdmin] = useState(false)
   const [regOpen, setRegOpen] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -39,6 +41,20 @@ export default function SettingsPage() {
     setToggling(false)
   }
 
+  const connectInstagram = () => {
+    const clientId = process.env.NEXT_PUBLIC_INSTAGRAM_APP_ID
+    const redirectUri = process.env.NEXT_PUBLIC_INSTAGRAM_REDIRECT_URI
+    if (!clientId || !redirectUri) return
+    window.location.href = `https://www.instagram.com/oauth/authorize?enable_fb_login=0&force_authentication=1&client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=instagram_business_basic%2Cinstagram_business_manage_messages%2Cinstagram_business_manage_comments`
+  }
+
+  const disconnectInstagram = () => {
+    localStorage.removeItem("ig_user_id")
+    localStorage.removeItem("ig_username")
+    localStorage.removeItem("ig_profile_pic")
+    window.location.reload()
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -66,6 +82,40 @@ export default function SettingsPage() {
           )}
         </div>
         <p className="text-sm text-muted-foreground">{email}</p>
+      </div>
+
+      {/* Instagram Connection */}
+      <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+        <div className="flex items-center gap-2">
+          <Instagram className="w-4 h-4 text-muted-foreground" />
+          <span className="text-sm font-medium text-foreground">{t("settings.instagram")}</span>
+          {userId && (
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-500/10 text-green-500 font-medium">
+              {t("settings.instagramConnected")}
+            </span>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground">{t("settings.instagramDesc")}</p>
+
+        {userId ? (
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-foreground">@{username}</span>
+            <button
+              onClick={disconnectInstagram}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium text-red-400 border border-red-500/20 hover:bg-red-500/10 transition-all"
+            >
+              {t("settings.instagramDisconnect")}
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={connectInstagram}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium bg-accent-yellow text-accent-yellow-foreground hover:opacity-90 transition-all"
+          >
+            <Instagram className="w-3.5 h-3.5" />
+            {t("settings.instagramConnect")}
+          </button>
+        )}
       </div>
 
       {/* Registration Toggle — Admin only */}
