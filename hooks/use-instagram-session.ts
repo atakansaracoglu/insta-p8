@@ -37,6 +37,7 @@ export function useInstagramSession() {
                     localStorage.setItem("ig_user_id", uid)
                     if (data.username) localStorage.setItem("ig_username", data.username)
                     if (data.profilePic) localStorage.setItem("ig_profile_pic", data.profilePic)
+                    fetch("/api/instagram/subscribe", { method: "POST" }).catch(() => {})
                 } else {
                     // Cookie invalid or missing — clear stale local state
                     localStorage.removeItem("ig_user_id")
